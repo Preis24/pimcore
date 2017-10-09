@@ -1,0 +1,11 @@
+# Created by .ignore support plugin (hsz.mobi)
+### Node template
+# Logs
+*.log
+
+# dotenv environment variables file
+.env
+
+.circleci
+.idea
+vendor/

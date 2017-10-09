@@ -15,7 +15,6 @@
 namespace Pimcore\Bundle\CoreBundle\DataCollector;
 
 use Pimcore\Http\Request\Resolver\PimcoreContextResolver;
-use Pimcore\Version;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\DataCollector\DataCollector;
@@ -27,6 +26,9 @@ class PimcoreDataCollector extends DataCollector
      */
     protected $contextResolver;
 
+    /**
+     * @param PimcoreContextResolver $contextResolver
+     */
     public function __construct(PimcoreContextResolver $contextResolver)
     {
         $this->contextResolver = $contextResolver;
@@ -38,11 +40,7 @@ class PimcoreDataCollector extends DataCollector
     public function collect(Request $request, Response $response, \Exception $exception = null)
     {
         $this->data = [
-            'version'    => Version::getVersion(),
-            'revision'   => Version::getRevision(),
-            'debug_mode' => (bool)\Pimcore::inDebugMode(),
-            'dev_mode'   => defined('PIMCORE_DEVMODE') ? (bool)PIMCORE_DEVMODE : false,
-            'context'    => $this->contextResolver->getPimcoreContext($request),
+            'context' => $this->contextResolver->getPimcoreContext($request)
         ];
     }
 
@@ -51,7 +49,7 @@ class PimcoreDataCollector extends DataCollector
      */
     public function getName()
     {
-        return 'pimcore';
+        return 'pimcore.data_collector';
     }
 
     /**
@@ -60,37 +58,5 @@ class PimcoreDataCollector extends DataCollector
     public function getContext()
     {
         return $this->data['context'];
-    }
-
-    /**
-     * @return string
-     */
-    public function getVersion()
-    {
-        return $this->data['version'];
-    }
-
-    /**
-     * @return string
-     */
-    public function getRevision()
-    {
-        return $this->data['revision'];
-    }
-
-    /**
-     * @return bool
-     */
-    public function getDebugMode()
-    {
-        return $this->data['debug_mode'];
-    }
-
-    /**
-     * @return bool
-     */
-    public function getDevMode()
-    {
-        return $this->data['dev_mode'];
     }
 }

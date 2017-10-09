@@ -33,8 +33,6 @@ use Symfony\Component\HttpKernel\KernelEvents;
 
 /**
  * Runs before dynamic routing kicks in and resolves site + handles redirects
- *
- * TODO as this also handles the admin domain, a name without "Frontend" would be more suitable
  */
 class FrontendRoutingListener implements EventSubscriberInterface
 {
@@ -86,19 +84,7 @@ class FrontendRoutingListener implements EventSubscriberInterface
 
     public function onKernelRequest(GetResponseEvent $event)
     {
-        if (!$event->isMasterRequest()) {
-            return;
-        }
-
         $request = $event->getRequest();
-
-        // handle main domain redirect in admin context
-        if ($this->matchesPimcoreContext($request, PimcoreContextResolver::CONTEXT_ADMIN)) {
-            $this->handleMainDomainRedirect($event, true);
-
-            return;
-        }
-
         if (!$this->matchesPimcoreContext($request, PimcoreContextResolver::CONTEXT_DEFAULT)) {
             return;
         }
@@ -196,31 +182,29 @@ class FrontendRoutingListener implements EventSubscriberInterface
      * Redirect to the main domain if specified
      *
      * @param GetResponseEvent $event
-     * @param bool $adminContext
      */
-    protected function handleMainDomainRedirect(GetResponseEvent $event, bool $adminContext = false)
+    protected function handleMainDomainRedirect(GetResponseEvent $event)
     {
         $request = $event->getRequest();
         $config  = Config::getSystemConfig();
 
         $hostRedirect = null;
 
-        if ($adminContext) {
-            $hostRedirect = $this->resolveConfigDomainRedirectHost($config, $request);
+        if (Site::isSiteRequest()) {
+            $site = Site::getCurrentSite();
+            if ($site->getRedirectToMainDomain() && $site->getMainDomain() != $request->getHost()) {
+                $hostRedirect = $site->getMainDomain();
+            }
         } else {
-            if (Site::isSiteRequest()) {
-                $site = Site::getCurrentSite();
-                if ($site->getRedirectToMainDomain() && $site->getMainDomain() != $request->getHost()) {
-                    $hostRedirect = $site->getMainDomain();
-                }
-            } else {
-                if (!$this->requestHelper->isFrontendRequestByAdmin()) {
-                    $hostRedirect = $this->resolveConfigDomainRedirectHost($config, $request);
+            $gc = $config->general;
+            if ($gc->redirect_to_maindomain && $gc->domain && !$this->requestHelper->isFrontendRequestByAdmin()) {
+                if ($config->general->domain != $request->getHost()) {
+                    $hostRedirect = $config->general->domain;
                 }
             }
         }
 
-        if ($hostRedirect && !$request->query->has('pimcore_disable_host_redirect')) {
+        if ($hostRedirect && $request->request->has('pimcore_disable_host_redirect')) {
             $qs = '';
             if (null !== $qs = $request->getQueryString()) {
                 $qs = '?' . $qs;
@@ -234,17 +218,5 @@ class FrontendRoutingListener implements EventSubscriberInterface
 
             $event->setResponse(new RedirectResponse($url, Response::HTTP_MOVED_PERMANENTLY));
         }
-    }
-
-    private function resolveConfigDomainRedirectHost(Config\Config $config, Request $request)
-    {
-        $hostRedirect = null;
-
-        $gc = $config->general;
-        if ($gc->redirect_to_maindomain && $gc->domain && $gc->domain !== $request->getHost()) {
-            $hostRedirect = $config->general->domain;
-        }
-
-        return $hostRedirect;
     }
 }

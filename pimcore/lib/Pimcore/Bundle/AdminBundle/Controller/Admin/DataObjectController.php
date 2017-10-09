@@ -908,7 +908,7 @@ class DataObjectController extends ElementControllerBase implements EventedContr
             $parentObject = DataObject::getById($request->get('id'));
 
             $list = new DataObject\Listing();
-            $list->setCondition('o_path LIKE ' . $list->quote($parentObject->getRealFullPath() . '/%'));
+            $list->setCondition("o_path LIKE '" . $parentObject->getRealFullPath() . "/%'");
             $list->setLimit(intval($request->get('amount')));
             $list->setOrderKey('LENGTH(o_path)', false);
             $list->setOrder('DESC');
@@ -988,7 +988,7 @@ class DataObjectController extends ElementControllerBase implements EventedContr
                 if ($hasChilds) {
                     // get amount of childs
                     $list = new DataObject\Listing();
-                    $list->setCondition('o_path LIKE ' . $list->quote($object->getRealFullPath() . '/%'));
+                    $list->setCondition("o_path LIKE '" . $object->getRealFullPath() . "/%'");
                     $childs = $list->getTotalCount();
 
                     $totalChilds += $childs;
@@ -1722,18 +1722,12 @@ class DataObjectController extends ElementControllerBase implements EventedContr
             }
 
             $listClass = '\\Pimcore\\Model\\DataObject\\' . ucfirst($className) . '\\Listing';
-            /**
-             * @var $list DataObject\Listing\Concrete
-             */
-            $list = new $listClass();
 
             $conditionFilters = [];
             if ($request->get('only_direct_children') == 'true') {
                 $conditionFilters[] = 'o_parentId = ' . $folder->getId();
             } else {
-                $quotedPath = $list->quote($folder->getRealFullPath());
-                $quotedWildcardPath = $list->quote(str_replace('//', '/', $folder->getRealFullPath() . '/') . '%');
-                $conditionFilters[] = '(o_path = ' . $quotedPath . ' OR o_path LIKE ' . $quotedWildcardPath . ')';
+                $conditionFilters[] = "(o_path = '" . $folder->getRealFullPath() . "' OR o_path LIKE '" . str_replace('//', '/', $folder->getRealFullPath() . '/') . "%')";
             }
 
             if (!$this->getUser()->isAdmin()) {
@@ -1757,10 +1751,11 @@ class DataObjectController extends ElementControllerBase implements EventedContr
                     $featureJoins = array_merge($featureJoins, $featureFilters['joins']);
                 }
             }
-            if ($request->get('condition') && $this->getUser()->isAdmin()) {
+            if ($request->get('condition')) {
                 $conditionFilters[] = '(' . $request->get('condition') . ')';
             }
 
+            $list = new $listClass();
             if (!empty($bricks)) {
                 foreach ($bricks as $b) {
                     $list->addObjectbrick($b);
@@ -1871,7 +1866,7 @@ class DataObjectController extends ElementControllerBase implements EventedContr
             if ($object->hasChildren([DataObject\AbstractObject::OBJECT_TYPE_OBJECT, DataObject\AbstractObject::OBJECT_TYPE_FOLDER, DataObject\AbstractObject::OBJECT_TYPE_VARIANT])) {
                 // get amount of children
                 $list = new DataObject\Listing();
-                $list->setCondition('o_path LIKE ' . $list->quote($object->getRealFullPath() . '/%'));
+                $list->setCondition("o_path LIKE '" . $object->getRealFullPath() . "/%'");
                 $list->setOrderKey('LENGTH(o_path)', false);
                 $list->setOrder('ASC');
                 $list->setObjectTypes([DataObject\AbstractObject::OBJECT_TYPE_OBJECT, DataObject\AbstractObject::OBJECT_TYPE_FOLDER, DataObject\AbstractObject::OBJECT_TYPE_VARIANT]);

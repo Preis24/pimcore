@@ -58,19 +58,9 @@ trait PimcoreMigrationsConfiguration
                 'b',
                 InputOption::VALUE_REQUIRED,
                 sprintf(
-                    'The bundle to migrate. If no bundle is set it will use the <comment>app</comment> set from <comment>%s</comment>.',
+                    'The bundle to migrate. If no bundle is set it will handle app migrations from <comment>%s</comment>',
                     'app/Resources/migrations'
                 )
-            )
-            ->addOption(
-                'set',
-                's',
-                InputOption::VALUE_REQUIRED,
-                sprintf(
-                    'The migration set to use (will be overridden by bundle if <comment>--bundle</comment> option is set).' . PHP_EOL . 'Defaults to <comment>app</comment> which loads migrations from <comment>%s</comment>.',
-                    'app/Resources/migrations'
-                ),
-                'app'
             );
     }
 
@@ -87,13 +77,7 @@ trait PimcoreMigrationsConfiguration
             if ($bundle) {
                 $this->migrationConfiguration = $factory->getForBundle($bundle, $connection, $outputWriter);
             } else {
-                $this->migrationConfiguration = $factory->getForSet($input->getOption('set'), $connection, $outputWriter);
-            }
-
-            // the migration configuration might use another connection than the one resolved in getConnection
-            // e.g. when the migration set defines a dedicate connection
-            if ($this->migrationConfiguration->getConnection() !== $this->connection) {
-                $this->connection = $this->migrationConfiguration->getConnection();
+                $this->migrationConfiguration = $factory->getForSet('app', $connection, $outputWriter);
             }
         }
 

@@ -22,10 +22,10 @@
   ],
   "support": {
     "issues": "https://github.com/pimcore/pimcore/issues",
-    "wiki": "https://pimcore.com/docs/5.0.x/index.html",
+    "wiki": "https://www.pimcore.org/wiki/",
     "source": "https://github.com/pimcore/pimcore",
     "forum": "https://groups.google.com/forum/#!forum/pimcore",
-    "docs": "https://pimcore.com/docs/5.0.x/index.html"
+    "docs": "https://www.pimcore.org/wiki/"
   },
   "config": {
     "optimize-autoloader": true,

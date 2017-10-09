@@ -1372,8 +1372,7 @@ class TranslationController extends AdminController
         $classname = '\\Pimcore\\Model\\Translation\\' . ucfirst($translationType);
         foreach ($dataList as $data) {
             $t = $classname::getByKey($data['key'], true);
-            $newValue = htmlspecialchars_decode($data['current']);
-            $t->addTranslation($data['lg'], $newValue);
+            $t->addTranslation($data['lg'], $data['current']);
             $t->setModificationDate(time());
             $t->save();
         }

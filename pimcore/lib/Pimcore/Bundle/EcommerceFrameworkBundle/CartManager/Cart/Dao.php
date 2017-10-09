@@ -25,7 +25,7 @@ class Dao extends \Pimcore\Model\Dao\AbstractDao
      */
     protected $validColumns = [];
 
-    protected $fieldsToSave = ['name', 'userid', 'creationDateTimestamp', 'modificationDateTimestamp'];
+    protected $fieldsToSave = ['name', 'userid', 'creationDateTimestamp'];
 
     /**
      * Get the valid columns from the database
