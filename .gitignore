@@ -9,6 +9,7 @@
 /web/bundles/
 
 # local config
+/.env
 !/app/config/local
 /app/config/local/*
 !app/config/local/.gitkeep
@@ -22,7 +23,7 @@
 /var/*
 !/var/.gitkeep
 !/var/classes/
-/var/classes/Object
+/var/classes/DataObject
 
 !/var/config
 /var/config/system.php

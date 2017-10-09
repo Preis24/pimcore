@@ -14,20 +14,33 @@
 
 namespace Pimcore\Bundle\CoreBundle\EventListener\Frontend;
 
+use Pimcore\Bundle\CoreBundle\EventListener\Traits\PimcoreContextAwareTrait;
 use Pimcore\Bundle\CoreBundle\EventListener\Traits\ResponseInjectionTrait;
+use Pimcore\Http\Request\Resolver\EditmodeResolver;
+use Pimcore\Http\Request\Resolver\PimcoreContextResolver;
 use Pimcore\Model\Site;
 use Pimcore\Model\Tool\Tag;
-use Pimcore\Service\Request\PimcoreContextResolver;
 use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
 
-class TagManagerListener extends AbstractFrontendListener
+class TagManagerListener
 {
+    use PimcoreContextAwareTrait;
     use ResponseInjectionTrait;
+
+    /**
+     * @var EditmodeResolver
+     */
+    private $editmodeResolver;
 
     /**
      * @var bool
      */
     protected $enabled = true;
+
+    public function __construct(EditmodeResolver $editmodeResolver)
+    {
+        $this->editmodeResolver = $editmodeResolver;
+    }
 
     /**
      * @return bool
@@ -71,6 +84,12 @@ class TagManagerListener extends AbstractFrontendListener
             return;
         }
 
+        // It's standard industry practice to exclude tracking if the request includes the header 'X-Purpose:preview'
+        $serverVars = $event->getRequest()->server;
+        if ($serverVars->get('HTTP_X_PURPOSE') == 'preview') {
+            return;
+        }
+
         $response = $event->getResponse();
         if (!$this->isHtmlResponse($response) || !$this->isEnabled()) {
             return;
@@ -87,7 +106,13 @@ class TagManagerListener extends AbstractFrontendListener
         $content = $response->getContent();
         $requestParams = array_merge($_GET, $_POST);
 
+        $editmode = $this->editmodeResolver->isEditmode($request);
+
+        /** @var $tag Tag\Config */
         foreach ($tags as $tag) {
+            if ($tag->isDisabled()) {
+                continue;
+            }
             $method = strtolower($tag->getHttpMethod());
             $pattern = $tag->getUrlPattern();
             $textPattern = $tag->getTextPattern();
@@ -124,6 +149,14 @@ class TagManagerListener extends AbstractFrontendListener
 
                 if (is_array($tag->getItems()) && $paramsValid) {
                     foreach ($tag->getItems() as $item) {
+                        if ($item['disabled']) {
+                            continue;
+                        }
+
+                        if ($editmode && !$item['enabledInEditmode']) {
+                            continue;
+                        }
+
                         if (!empty($item['element']) && !empty($item['code']) && !empty($item['position'])) {
                             if (in_array($item['element'], ['body', 'head'])) {
                                 // check if the code should be inserted using one of the presets

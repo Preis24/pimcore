@@ -15,6 +15,8 @@
 namespace Pimcore\Web2Print\Processor;
 
 use Pimcore\Config;
+use Pimcore\Event\DocumentEvents;
+use Pimcore\Event\Model\PrintConfigEvent;
 use Pimcore\Logger;
 use Pimcore\Model\Document;
 use Pimcore\Web2Print\Processor;
@@ -43,7 +45,8 @@ class PdfReactor8 extends Processor
             'defaultColorSpace' => $config->colorspace,
             'encryption' => $config->encryption,
             'addTags' => $config->tags == 'true',
-            'logLevel' => $config->loglevel
+            'logLevel' => $config->loglevel,
+            'addOverprint' => $config->addOverprint == 'true'
         ];
         if ($config->viewerPreference) {
             $reactorConfig['viewerPreferences'] = [$config->viewerPreference];
@@ -114,25 +117,21 @@ class PdfReactor8 extends Processor
 
         $this->updateStatus($document->getId(), 10, 'start_html_rendering');
         $html = $document->renderDocument($params);
-
         $this->updateStatus($document->getId(), 40, 'finished_html_rendering');
-
-        $filePath = PIMCORE_TEMPORARY_DIRECTORY . '/pdf-reactor-input-' . $document->getId() . '.html';
-
-        file_put_contents($filePath, $html);
-        $html = null;
-
-        $this->updateStatus($document->getId(), 45, 'saved_html_file');
 
         ini_set('default_socket_timeout', 3000);
         ini_set('max_input_time', -1);
 
         $pdfreactor = $this->getClient();
-        $filePath = str_replace(PIMCORE_WEB_ROOT, '', $filePath);
 
         $reactorConfig = $this->getConfig($config);
         $web2PrintConfig = Config::getWeb2PrintConfig();
-        $reactorConfig['document'] = (string)$web2PrintConfig->pdfreactorBaseUrl . $filePath;
+        $reactorConfig['document'] = $html;
+
+        $event = new PrintConfigEvent($this, ['config' => $config, 'reactorConfig' => $reactorConfig, 'document' => $document]);
+        \Pimcore::getEventDispatcher()->dispatch(DocumentEvents::PRINT_MODIFY_PROCESSING_CONFIG, $event);
+
+        $reactorConfig = $event->getArguments()['reactorConfig'];
 
         try {
             $progress = new \stdClass();
@@ -171,6 +170,7 @@ class PdfReactor8 extends Processor
         $options[] = ['name' => 'author', 'type' => 'text', 'default' => ''];
         $options[] = ['name' => 'title', 'type' => 'text', 'default' => ''];
         $options[] = ['name' => 'printermarks', 'type' => 'bool', 'default' => ''];
+        $options[] = ['name' => 'addOverprint', 'type' => 'bool', 'default' => ''];
         $options[] = ['name' => 'links', 'type' => 'bool', 'default' => true];
         $options[] = ['name' => 'bookmarks', 'type' => 'bool', 'default' => true];
         $options[] = ['name' => 'tags', 'type' => 'bool', 'default' => true];
@@ -209,6 +209,12 @@ class PdfReactor8 extends Processor
             'default' => \LogLevel::FATAL
         ];
 
-        return $options;
+        $event = new PrintConfigEvent($this, [
+            'options' => $options
+        ]);
+
+        \Pimcore::getEventDispatcher()->dispatch(DocumentEvents::PRINT_MODIFY_PROCESSING_OPTIONS, $event);
+
+        return (array)$event->getArguments()['options'];
     }
 }

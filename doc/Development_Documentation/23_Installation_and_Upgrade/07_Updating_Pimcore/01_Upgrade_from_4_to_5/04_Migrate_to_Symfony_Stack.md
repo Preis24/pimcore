@@ -6,25 +6,20 @@ list for every Pimcore application. Depending on your application additional ste
 be necessary. 
 
 ### Prerequisites 
-- If not already done, following database changes are needed: 
+
+- Execute the [Basic Migration](./01_Basic_Migration.md) steps
+
+- If you were running the Compatibility Bridge before - please run the following SQL: 
 ```sql 
-ALTER TABLE `documents_page` ADD COLUMN `legacy` TINYINT(1) NULL AFTER `personas`;
-ALTER TABLE `documents_snippet` ADD COLUMN `legacy` TINYINT(1) NULL AFTER `contentMasterDocumentId`;
-ALTER TABLE `documents_newsletter` ADD COLUMN `legacy` TINYINT(1) NULL;
-ALTER TABLE `documents_printpage` ADD COLUMN `legacy` TINYINT(1) NULL;
-ALTER TABLE `documents_email` ADD COLUMN `legacy` TINYINT(1) NULL;
-ALTER TABLE `translations_website` CHANGE COLUMN `key` `key` VARCHAR(190) NOT NULL DEFAULT '' COLLATE 'utf8mb4_bin';
-ALTER TABLE `translations_admin` CHANGE COLUMN `key` `key` VARCHAR(190) NOT NULL DEFAULT '' COLLATE 'utf8mb4_bin'; 
+UPDATE documents_email SET legacy = NULL; 
+UPDATE documents_newsletter SET legacy = NULL; 
+UPDATE documents_page SET legacy = NULL; 
+UPDATE documents_snippet SET legacy = NULL; 
+UPDATE documents_printpage SET legacy = NULL;  
 ```
 
-If you were running the Compatibility Bridge before - please also run the following SQL: 
-```sql 
-update documents_email set legacy = NULL; 
-update documents_newsletter set legacy = NULL; 
-update documents_page set legacy = NULL; 
-update documents_snippet set legacy = NULL; 
-update documents_printpage set legacy = NULL;  
-```
+- The Pimcore CLI can help you with code migrations. Make sure to check the [docs](https://github.com/pimcore/pimcore-cli/blob/master/doc/pimcore_5_migration.md) 
+  to see what you can migrate automatically.
 
 ### Controller
 - Move Controllers to `/src/AppBundle/Controllers/`.
@@ -47,7 +42,7 @@ public function onKernelController(FilterControllerEvent $event)
 }
 ``` 
 - Remove `$this->enableLayout()`. Use `$this->extend` in view template instead, see 
-[layouts](../../../02_MVC/02_Template/00_Layouts.md) for details. 
+[layouts](../../../02_MVC/02_Template/01_Layouts.md) for details. 
 - Replace `$this->getParam()` by adding `Request $request` as action Parameter and call 
 `$request->get()` instead. 
 - Replace `$this->getAllParams()` by adding `Request $request` as action Parameter and call 
@@ -82,7 +77,7 @@ This will result in data loss!
    - Use `$this->extend('layout.html.php');` for including layouts in templates
    - Do not call `$this->extend('layout.html.php');` twice, for example via including templates via `$this->render()`.
     This will result in double rendering of the template (e.g. two menus, ...). 
-   - For details on layouts see [layout docs](../../../02_MVC/02_Template/00_Layouts.md). 
+   - For details on layouts see [layout docs](../../../02_MVC/02_Template/01_Layouts.md). 
 
 - Templates location
   - move view scripts to `/app/Resources/views/[ControllerName]/[actionName].html.php` 
@@ -149,5 +144,11 @@ This will result in data loss!
  folder and should be included automatically by the autoloader. E.g. you have a 
  directory `/src/Website` for all your models and libraries in `Website` namespace. 
 - Replace and refactor all ZF1 functionality. 
+
+### Documents
+- Document editables now use a different naming format for nested editables. Please see the upgrade notes regarding build
+  54 in the [upgrade within V5 upgrade notes](../../09_Upgrade_Notes/01_Within_V5.md#page_Build_54_(2017-05-16)) documentation and add the
+  configuration entry for the legacy naming to your config or execute the naming migration script. Details on the migration
+  can be found in [Editable Naming Strategies](../../../03_Documents/13_Editable_Naming_Strategies.md).
 
 > Also have a look at the [Upgrade Notes](../../09_Upgrade_Notes/02_V4_to_V5.md).

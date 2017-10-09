@@ -14,6 +14,7 @@
 
 namespace Pimcore\Templating;
 
+use Pimcore\Config\Config;
 use Pimcore\Model\Document;
 use Pimcore\Model\Document\Tag;
 use Pimcore\Templating\Helper\Cache;
@@ -26,7 +27,6 @@ use Pimcore\Templating\Helper\HeadTitle;
 use Pimcore\Templating\Helper\InlineScript;
 use Pimcore\Templating\Helper\Navigation;
 use Pimcore\Templating\Helper\Placeholder\Container;
-use Pimcore\Templating\Helper\TemplatingEngineAwareHelperInterface;
 use Pimcore\Templating\HelperBroker\HelperBrokerInterface;
 use Pimcore\Templating\Model\ViewModel;
 use Pimcore\Templating\Model\ViewModelInterface;
@@ -90,6 +90,7 @@ use Symfony\Component\Templating\Storage\Storage;
  * @method string inc($include, array $params = [], $cacheEnabled = true, $editmode = null)
  * @method InlineScript inlineScript($mode = HeadScript::FILE, $spec = null, $placement = 'APPEND', array $attrs = array(), $type = 'text/javascript')
  * @method Navigation navigation()
+ * @method Config|mixed websiteConfig($key = null, $default = null)
  * @method string pimcoreUrl(array $urlOptions = [], $name = null, $reset = false, $encode = true, $relative = false)
  * @method string translate($key, $parameters = [], $domain = null, $locale = null)
  *
@@ -105,7 +106,7 @@ use Symfony\Component\Templating\Storage\Storage;
  * @method Tag\Input input($name, $options = [])
  * @method Tag\Link link($name, $options = [])
  * @method Tag\Multihref multihref($name, $options = [])
- * @method Tag\Multiselect mutliselect($name, $options = [])
+ * @method Tag\Multiselect multiselect($name, $options = [])
  * @method Tag\Numeric numeric($name, $options = [])
  * @method Tag\Pdf pdf($name, $options = [])
  * @method Tag\Renderlet renderlet($name, $options = [])
@@ -140,19 +141,6 @@ class PhpEngine extends BasePhpEngine
     public function addHelperBroker(HelperBrokerInterface $helperBroker)
     {
         $this->helperBrokers[] = $helperBroker;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function get($name)
-    {
-        $helper = parent::get($name);
-        if ($helper instanceof TemplatingEngineAwareHelperInterface) {
-            $helper->setTemplatingEngine($this);
-        }
-
-        return $helper;
     }
 
     /**

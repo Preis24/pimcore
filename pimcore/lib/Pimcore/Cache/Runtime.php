@@ -16,7 +16,7 @@ namespace Pimcore\Cache;
 
 final class Runtime extends \ArrayObject
 {
-    const SERVICE_ID = 'pimcore.cache.runtime';
+    const SERVICE_ID = __CLASS__;
 
     protected static $tempInstance;
 
@@ -160,7 +160,8 @@ final class Runtime extends \ArrayObject
 
     /**
      * @param string $index
-     * @returns mixed
+     *
+     * @return mixed
      *
      * Workaround for http://bugs.php.net/bug.php?id=40442 (ZF-960).
      */

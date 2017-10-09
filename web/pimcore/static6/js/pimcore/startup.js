@@ -226,10 +226,6 @@ Ext.onReady(function () {
                             if ('undefined' !== typeof json.message && json.message.length > 0) {
                                 errorDetailMessage = json.message;
                             }
-
-                            if ('undefined' !== typeof json.trace && json.trace.length > 0) {
-                                errorDetailMessage += "\nTrace: " + JSON.stringify(json.trace, null, 2);
-                            }
                         }
                     } catch (e) {
                         // noop, just fall back to generic error message (whole response text)
@@ -467,7 +463,7 @@ Ext.onReady(function () {
     // check for updates
     window.setTimeout(function () {
         var script = document.createElement("script");
-        script.src = "https://www.pimcore.org/update/v2/statusbarUpdateCheck.php?revision=" + pimcore.settings.build;
+        script.src = "https://liveupdate.pimcore.org/update-check?revision=" + pimcore.settings.build;
         script.type = "text/javascript";
         Ext.query("body")[0].appendChild(script);
     }, 5000);
@@ -476,6 +472,7 @@ Ext.onReady(function () {
     // remove loading
     Ext.get("pimcore_loading").addCls("loaded");
     Ext.get("pimcore_loading").hide();
+    Ext.get("pimcore_signet").show();
 
     // init general layout
     try {
@@ -609,6 +606,8 @@ Ext.onReady(function () {
             var treepanel = null;
             var tree = null;
 
+            var locateKey = "layout_" + type + "_locateintree_tree";
+
             switch (type) {
                 case "documents":
                     if (user.isAllowed("documents") && !treeConfig.hidden) {
@@ -639,6 +638,8 @@ Ext.onReady(function () {
                 case "customview":
                     if (!treeConfig.hidden) {
                         var treetype = treeConfig.treetype ? treeConfig.treetype : "object";
+                        locateKey = "layout_" + treetype + "s_locateintree_tree";
+
                         if (user.isAllowed(treetype + "s")) {
                             treepanel = Ext.getCmp("pimcore_panel_tree_" + side);
 
@@ -660,9 +661,14 @@ Ext.onReady(function () {
                             pimcore.globalmanager.add("layout_" + treetype + "_tree_" + treeConfig.id, tree);
 
                             treepanel.setHidden(false);
+                            locateTree = treepanel;
                         }
                     }
                     break;
+            }
+
+            if (!pimcore.globalmanager.get(locateKey)) {
+                pimcore.globalmanager.add(locateKey, tree);
             }
         }
     }

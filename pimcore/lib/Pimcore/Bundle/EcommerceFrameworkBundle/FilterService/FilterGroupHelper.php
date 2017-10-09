@@ -16,7 +16,7 @@ namespace Pimcore\Bundle\EcommerceFrameworkBundle\FilterService;
 
 use Pimcore\Bundle\EcommerceFrameworkBundle\IndexService\ProductList\IProductList;
 use Pimcore\Bundle\EcommerceFrameworkBundle\IndexService\Worker\IWorker;
-use Pimcore\Model\Object\AbstractObject;
+use Pimcore\Model\DataObject\AbstractObject;
 
 /**
  * Helper for getting possible group by values based on different column groups
@@ -40,7 +40,7 @@ class FilterGroupHelper
      *
      * @return string
      */
-    protected static function getColumnTypeForColumnGroup($columnGroup)
+    protected function getColumnTypeForColumnGroup($columnGroup)
     {
         return $columnGroup;
     }
@@ -54,9 +54,9 @@ class FilterGroupHelper
      *
      * @return array
      */
-    public static function getGroupByValuesForFilterGroup($columnGroup, IProductList $productList, $field)
+    public function getGroupByValuesForFilterGroup($columnGroup, IProductList $productList, $field)
     {
-        $columnType = self::getColumnTypeForColumnGroup($columnGroup);
+        $columnType = $this->getColumnTypeForColumnGroup($columnGroup);
 
         $data = [];
 

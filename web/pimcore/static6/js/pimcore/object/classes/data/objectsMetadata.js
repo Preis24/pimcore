@@ -86,8 +86,8 @@ pimcore.object.classes.data.objectsMetadata = Class.create(pimcore.object.classe
                 xtype: "checkbox",
                 fieldLabel: t("lazy_loading"),
                 name: "lazyLoading",
-                checked: this.datax.lazyLoading,
-                disabled: this.isInCustomLayoutEditor()
+                checked: this.datax.lazyLoading && !this.lazyLoadingNotPossible(),
+                disabled: this.isInCustomLayoutEditor() || this.lazyLoadingNotPossible()
             },
             {
                 xtype: "displayfield",
@@ -115,7 +115,7 @@ pimcore.object.classes.data.objectsMetadata = Class.create(pimcore.object.classe
         this.classCombo = new Ext.form.ComboBox({
             typeAhead: true,
             triggerAction: 'all',
-            width: 400,
+            width: 600,
             store: pimcore.globalmanager.get("object_types_store"),
             valueField: 'id',
             editable: true,
@@ -249,7 +249,8 @@ pimcore.object.classes.data.objectsMetadata = Class.create(pimcore.object.classe
                 number: t("objectsMetadata_type_number"),
                 text: t("objectsMetadata_type_text"),
                 select: t("objectsMetadata_type_select"),
-                bool: t("objectsMetadata_type_bool")
+                bool: t("objectsMetadata_type_bool"),
+                multiselect: t("objectsMetadata_type_multiselect")
             };
 
             var typeComboBox = new Ext.form.ComboBox({
@@ -265,7 +266,7 @@ pimcore.object.classes.data.objectsMetadata = Class.create(pimcore.object.classe
                         'label'
                     ],
                     data: [['number', types.number], ['text', types.text], ['select', types.select],
-                        ['bool', types.bool]]
+                        ['bool', types.bool], ['multiselect', types.multiselect]]
                 }),
                 valueField: 'value',
                 displayField: 'label'

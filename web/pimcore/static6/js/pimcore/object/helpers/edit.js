@@ -20,10 +20,15 @@
 pimcore.registerNS("pimcore.object.helpers.edit");
 pimcore.object.helpers.edit = {
 
-    getRecursiveLayout: function (l, noteditable, context) {
+    getRecursiveLayout: function (l, noteditable, context, skipLayoutChildren, onlyLayoutChildren, dataProvider) {
         if (typeof context === "undefined") {
             context = {};
         }
+
+        if (typeof dataProvider === "undefined") {
+            dataProvider = this;
+        }
+
         context.objectId = this.object.id;
 
         var panelListenerConfig = {};
@@ -122,7 +127,7 @@ pimcore.object.helpers.edit = {
         };
 
         var validKeys = ["xtype","title","layout","icon","items","region","width","height","name","text","html","handler",
-            "labelWidth", "fieldLabel", "collapsible","collapsed","bodyStyle"];
+            "labelWidth", "fieldLabel", "collapsible","collapsed","bodyStyle","listeners"];
 
         var tmpItems;
 
@@ -132,7 +137,7 @@ pimcore.object.helpers.edit = {
         }
 
         if (l.datatype == "layout") {
-            if (l.childs && typeof l.childs == "object") {
+            if (skipLayoutChildren !== true && l.childs && typeof l.childs == "object") {
                 if (l.childs.length > 0) {
                     l.items = [];
                     for (var i = 0; i < l.childs.length; i++) {
@@ -146,13 +151,46 @@ pimcore.object.helpers.edit = {
                             childConfig.fieldLabel = l.fieldLabel;
                         }
 
-                        tmpItems = this.getRecursiveLayout(childConfig, noteditable, context);
+
+                        if(l.fieldtype =='tabpanel') {
+                            tmpItems = this.getRecursiveLayout(childConfig, noteditable, context, true, false, dataProvider);
+                            if (tmpItems) {
+                                if (!tmpItems['listeners']) {
+                                    tmpItems['listeners'] = {};
+                                }
+                                tmpItems['listeners']['afterrender'] = function (childConfig, panel) {
+                                    if (!panel.__tabpanel_initialized) {
+                                        var children = this.getRecursiveLayout(childConfig, noteditable, context, false, true, dataProvider);
+                                        panel.add(children);
+                                        panel.updateLayout();
+
+                                        if (panel.setActiveTab) {
+                                            var activeTab = panel.items.items[0];
+                                            if (activeTab) {
+                                                activeTab.updateLayout();
+                                                panel.setActiveTab(activeTab);
+                                            }
+                                        }
+
+                                        panel.__tabpanel_initialized = true;
+
+
+                                    }
+                                }.bind(this, childConfig);
+                            }
+                        } else {
+                            tmpItems = this.getRecursiveLayout(childConfig, noteditable, context, false, false, dataProvider);
+                        }
 
                         if (tmpItems) {
                             l.items.push(tmpItems);
                         }
                     }
                 }
+            }
+
+            if(onlyLayoutChildren === true) {
+                return l.items;
             }
 
             var configKeys = Object.keys(l);
@@ -178,7 +216,7 @@ pimcore.object.helpers.edit = {
                 }
             }
 
-            newConfig = Object.extend(xTypeLayoutMapping[l.fieldtype], newConfig);
+            newConfig = Object.extend(xTypeLayoutMapping[l.fieldtype] || {}, newConfig);
             if (typeof newConfig.labelWidth != "undefined") {
                 newConfig = Ext.applyIf(newConfig, {
                     defaults: {
@@ -220,8 +258,8 @@ pimcore.object.helpers.edit = {
                 var metaData;
 
                 try {
-                    if (typeof this.getDataForField(l) != "function") {
-                        data = this.getDataForField(l);
+                    if (typeof dataProvider.getDataForField(l) != "function") {
+                        data = dataProvider.getDataForField(l);
                     }
                 } catch (e) {
                     data = null;
@@ -229,8 +267,8 @@ pimcore.object.helpers.edit = {
                 }
 
                 try {
-                    if (typeof this.getMetaDataForField(l) != "function") {
-                        metaData = this.getMetaDataForField(l);
+                    if (typeof dataProvider.getMetaDataForField(l) != "function") {
+                        metaData = dataProvider.getMetaDataForField(l);
                     }
                 } catch (e2) {
                     metaData = null;
@@ -255,7 +293,7 @@ pimcore.object.helpers.edit = {
                     field.labelWidth = l.labelWidth;
                 }
 
-                this.addToDataFields(field, l.name);
+                dataProvider.addToDataFields(field, l.name);
 
                 if (l.noteditable || noteditable) {
                     dLayout = field.getLayoutShow();

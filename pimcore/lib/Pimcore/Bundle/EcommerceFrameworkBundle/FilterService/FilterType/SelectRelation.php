@@ -17,8 +17,8 @@ namespace Pimcore\Bundle\EcommerceFrameworkBundle\FilterService\FilterType;
 use Pimcore\Bundle\EcommerceFrameworkBundle\IndexService\ProductList\IProductList;
 use Pimcore\Bundle\EcommerceFrameworkBundle\Model\AbstractFilterDefinitionType;
 use Pimcore\Logger;
-use Pimcore\Model\Object\AbstractObject;
-use Pimcore\Model\Object\Folder;
+use Pimcore\Model\DataObject\AbstractObject;
+use Pimcore\Model\DataObject\Folder;
 
 class SelectRelation extends AbstractFilterType
 {
@@ -46,7 +46,7 @@ class SelectRelation extends AbstractFilterType
         if ($filterDefinition->getScriptPath()) {
             $script = $filterDefinition->getScriptPath();
         } else {
-            $script = $this->script;
+            $script = $this->template;
         }
 
         return $this->render($script, [

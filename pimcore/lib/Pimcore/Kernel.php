@@ -23,6 +23,7 @@ use Pimcore\Config\BundleConfigLocator;
 use Pimcore\Event\SystemEvents;
 use Pimcore\Extension\Bundle\Config\StateConfig;
 use Pimcore\HttpKernel\BundleCollection\BundleCollection;
+use Pimcore\HttpKernel\BundleCollection\ItemInterface;
 use Pimcore\HttpKernel\BundleCollection\LazyLoadedItem;
 use Pimcore\HttpKernel\Config\SystemConfigParamResource;
 use Sensio\Bundle\DistributionBundle\SensioDistributionBundle;
@@ -49,11 +50,24 @@ abstract class Kernel extends SymfonyKernel
     protected $extensionConfig;
 
     /**
+     * @var BundleCollection
+     */
+    private $bundleCollection;
+
+    /**
      * {@inheritdoc}
      */
     public function getRootDir()
     {
         return PIMCORE_APP_ROOT;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function getProjectDir()
+    {
+        return PIMCORE_PROJECT_ROOT;
     }
 
     /**
@@ -113,7 +127,7 @@ abstract class Kernel extends SymfonyKernel
         Runtime::getInstance();
 
         // set the extension config on the container
-        $this->getContainer()->set('pimcore.extension.config', $this->extensionConfig);
+        $this->getContainer()->set(Extension\Config::class, $this->extensionConfig);
 
         \Pimcore::initLogger();
         \Pimcore\Cache::init();
@@ -144,15 +158,27 @@ abstract class Kernel extends SymfonyKernel
         // core bundles (Symfony, Pimcore)
         $this->registerCoreBundlesToCollection($collection);
 
-        // bundles registered in extensions.php
-        $this->registerExtensionManagerBundles($collection);
-
         // custom bundles
         $this->registerBundlesToCollection($collection);
 
+        // bundles registered in extensions.php
+        $this->registerExtensionManagerBundles($collection);
+
         $bundles = $collection->getBundles($this->getEnvironment());
 
+        $this->bundleCollection = $collection;
+
         return $bundles;
+    }
+
+    /**
+     * Returns the bundle collection which was used to build the set of used bundles
+     *
+     * @return BundleCollection
+     */
+    public function getBundleCollection(): BundleCollection
+    {
+        return $this->bundleCollection;
     }
 
     /**
@@ -222,8 +248,18 @@ abstract class Kernel extends SymfonyKernel
                 continue;
             }
 
+            // do not register bundles twice - skip if it was already loaded manually
+            if ($collection->hasItem($className)) {
+                continue;
+            }
+
             // use lazy loaded item to instantiate the bundle only if environment matches
-            $collection->add(new LazyLoadedItem($className, $options['priority'], $options['environments']));
+            $collection->add(new LazyLoadedItem(
+                $className,
+                $options['priority'],
+                $options['environments'],
+                ItemInterface::SOURCE_EXTENSION_MANAGER_CONFIG
+            ));
         }
     }
 

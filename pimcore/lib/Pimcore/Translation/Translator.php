@@ -15,10 +15,13 @@
 namespace Pimcore\Translation;
 
 use Pimcore\Cache;
+use Pimcore\Model\Translation\AbstractTranslation;
+use Pimcore\Model\Translation\TranslationInterface;
 use Pimcore\Tool;
 use Symfony\Component\HttpKernel\Kernel;
 use Symfony\Component\Translation\Exception\InvalidArgumentException;
 use Symfony\Component\Translation\MessageCatalogue;
+use Symfony\Component\Translation\MessageCatalogueInterface;
 use Symfony\Component\Translation\MessageSelector;
 use Symfony\Component\Translation\TranslatorBagInterface;
 use Symfony\Component\Translation\TranslatorInterface;
@@ -29,6 +32,11 @@ class Translator implements TranslatorInterface, TranslatorBagInterface
      * @var TranslatorInterface|TranslatorBagInterface
      */
     protected $translator;
+
+    /**
+     * @var bool
+     */
+    private $caseInsensitive = false;
 
     /**
      * @var array
@@ -46,14 +54,24 @@ class Translator implements TranslatorInterface, TranslatorBagInterface
     protected $adminPath = '';
 
     /**
+     * If true, the translator will just return the translation key instead of actually translating
+     * the message. Can be useful for debugging and to get an overview over used translation keys on
+     * a page.
+     *
+     * @var bool
+     */
+    protected $disableTranslations = false;
+
+    /**
      * @var Kernel
      */
     protected $kernel;
 
     /**
      * @param TranslatorInterface $translator The translator must implement TranslatorBagInterface
+     * @param bool $caseInsensitive
      */
-    public function __construct(TranslatorInterface $translator)
+    public function __construct(TranslatorInterface $translator, bool $caseInsensitive = false)
     {
         if (!$translator instanceof TranslatorBagInterface) {
             throw new InvalidArgumentException(sprintf('The Translator "%s" must implement TranslatorInterface and TranslatorBagInterface.', get_class($translator)));
@@ -61,6 +79,8 @@ class Translator implements TranslatorInterface, TranslatorBagInterface
 
         $this->translator = $translator;
         $this->selector = new MessageSelector();
+
+        $this->caseInsensitive = $caseInsensitive;
     }
 
     /**
@@ -68,6 +88,10 @@ class Translator implements TranslatorInterface, TranslatorBagInterface
      */
     public function trans($id, array $parameters = [], $domain = null, $locale = null)
     {
+        if ($this->disableTranslations) {
+            return $id;
+        }
+
         if (null === $domain) {
             $domain = 'messages';
         }
@@ -76,8 +100,7 @@ class Translator implements TranslatorInterface, TranslatorBagInterface
         $locale = $catalogue->getLocale();
         $this->lazyInitialize($domain, $locale);
 
-        $term = $catalogue->get((string) $id, $domain);
-        $term = $this->checkForEmptyTranslation($id, $term, $domain, $locale);
+        $term = $this->getFromCatalogue($catalogue, (string)$id, $domain, $locale);
         $term = strtr($term, $parameters);
 
         // check for an indexed array, that used the ZF1 vsprintf() notation for parameters
@@ -93,6 +116,10 @@ class Translator implements TranslatorInterface, TranslatorBagInterface
      */
     public function transChoice($id, $number, array $parameters = [], $domain = null, $locale = null)
     {
+        if ($this->disableTranslations) {
+            return $id;
+        }
+
         $parameters = array_merge([
             '%count%' => $number,
         ], $parameters);
@@ -115,11 +142,46 @@ class Translator implements TranslatorInterface, TranslatorBagInterface
             }
         }
 
-        $term = $catalogue->get($id, $domain);
-        $term = $this->checkForEmptyTranslation($id, $term, $domain, $locale);
+        $term = $this->getFromCatalogue($catalogue, $id, $domain, $locale);
         $term = $this->selector->choose($term, (int) $number, $locale);
 
         return strtr($term, $parameters);
+    }
+
+    private function getFromCatalogue(MessageCatalogueInterface $catalogue, $id, $domain, $locale)
+    {
+        $term = $catalogue->get($id, $domain);
+
+        // handle case insensitive translations if caseInsensitive is configured
+        if ($this->caseInsensitive && (empty($term) || $term == $id) && in_array($domain, ['messages', 'admin'])) {
+            $term = $this->getCaseInsensitiveFromCatalogue($catalogue, $term, $id, $domain);
+        }
+
+        // only check for empty translation on original ID - we don't want to create empty
+        // translations for normalized IDs when case insensitive
+        $term = $this->checkForEmptyTranslation($id, $term, $domain, $locale);
+
+        return $term;
+    }
+
+    private function getCaseInsensitiveFromCatalogue(MessageCatalogueInterface $catalogue, $term, $id, $domain)
+    {
+        $normalizedId = strtolower($id);
+
+        // nothing to do - we already looked up that key
+        if ($normalizedId === $id) {
+            return $term;
+        }
+
+        if ($catalogue->has($normalizedId, $domain)) {
+            $normalizedTerm = $catalogue->get($normalizedId, $domain);
+
+            if (!empty($normalizedTerm) && $normalizedTerm !== $normalizedId) {
+                $term = $normalizedTerm;
+            }
+        }
+
+        return $term;
     }
 
     /**
@@ -192,7 +254,14 @@ class Translator implements TranslatorInterface, TranslatorBagInterface
                     if (
                         (!isset($data[$translation['key']]) && !$this->getCatalogue($locale)->has($translation['key'], $domain)) ||
                         !empty($translationTerm)) {
-                        $data[$translation['key']] = $translationTerm;
+                        $translationKey = $translation['key'];
+
+                        // store as case insensitive if configured
+                        if ($this->caseInsensitive) {
+                            $translationKey = strtolower($translationKey);
+                        }
+
+                        $data[$translationKey] = $translationTerm;
                     }
                 }
 
@@ -220,28 +289,39 @@ class Translator implements TranslatorInterface, TranslatorBagInterface
      */
     protected function checkForEmptyTranslation($id, $translated, $domain, $locale)
     {
-        if ($id != $translated && $translated) {
+        $lookForFallback = empty($translated);
+        if (empty($id)) {
+            return $translated;
+        } elseif ($id != $translated && $translated) {
             return $translated;
         } elseif ($id == $translated && !$this->getCatalogue($locale)->has($id, $domain)) {
             $backend = $this->getBackendForDomain($domain);
             if ($backend) {
                 if (strlen($id) > 190) {
-                    throw new \Exception("Pimcore_Translate: Message ID's longer than 190 characters are invalid!");
+                    throw new \Exception("Message ID's longer than 190 characters are invalid!");
                 }
 
+                /** @var TranslationInterface $class */
                 $class = '\\Pimcore\\Model\\Translation\\' . ucfirst($backend);
 
                 // no translation found create key
-                if (Tool::isValidLanguage($locale)) {
+                if ($class::isValidLanguage($locale)) {
                     try {
+                        /**
+                         * @var AbstractTranslation $t
+                         */
                         $t = $class::getByKey($id);
-                        $t->addTranslation($locale, '');
+                        if (!$t->hasTranslation($locale)) {
+                            $t->addTranslation($locale, '');
+                        } else {
+                            return $translated;
+                        }
                     } catch (\Exception $e) {
                         $t = new $class();
                         $t->setKey($id);
 
                         // add all available languages
-                        $availableLanguages = (array)Tool::getValidLanguages();
+                        $availableLanguages = (array)$class::getLanguages();
                         foreach ($availableLanguages as $language) {
                             $t->addTranslation($language, '');
                         }
@@ -254,12 +334,12 @@ class Translator implements TranslatorInterface, TranslatorBagInterface
                 // the key would be inserted/updated several times, what would be redundant
                 $this->getCatalogue($locale)->set($id, $id, $domain);
 
-                $translated = '';
+                $lookForFallback = true;
             }
         }
 
         // now check for custom fallback locales, only for shared translations
-        if (empty($translated) && ($domain == 'messages' || $domain == 'admin')) {
+        if ($lookForFallback && $domain == 'messages') {
             foreach (Tool::getFallbackLanguagesFor($locale) as $fallbackLanguage) {
                 $this->lazyInitialize($domain, $fallbackLanguage);
                 $catalogue = $this->getCatalogue($fallbackLanguage);
@@ -274,7 +354,11 @@ class Translator implements TranslatorInterface, TranslatorBagInterface
             return $id;
         }
 
-        return $translated;
+        if (empty($translated)) {
+            return $id;
+        } else {
+            return $translated;
+        }
     }
 
     /**
@@ -326,6 +410,16 @@ class Translator implements TranslatorInterface, TranslatorBagInterface
     public function setKernel($kernel)
     {
         $this->kernel = $kernel;
+    }
+
+    public function getDisableTranslations(): bool
+    {
+        return $this->disableTranslations;
+    }
+
+    public function setDisableTranslations(bool $disableTranslations)
+    {
+        $this->disableTranslations = $disableTranslations;
     }
 
     /**

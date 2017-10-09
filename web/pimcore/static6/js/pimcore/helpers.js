@@ -139,7 +139,7 @@ pimcore.helpers.closeAsset = function (id) {
 pimcore.helpers.openDocument = function (id, type, options) {
     if (pimcore.globalmanager.exists("document_" + id) == false) {
         if (pimcore.document[type]) {
-            pimcore.globalmanager.add("document_" + id, new pimcore.document[type](id));
+            pimcore.globalmanager.add("document_" + id, new pimcore.document[type](id, options));
             pimcore.helpers.rememberOpenTab("document_" + id + "_" + type);
 
             if (options !== undefined) {
@@ -905,11 +905,11 @@ pimcore.helpers.openMemorizedTabs = function () {
                 window.setTimeout(function (parts) {
                     if(parts[1] && parts[2]) {
                         if(parts[0] == "asset") {
-                            pimcore.helpers.openAsset(parts[1], parts[2], { ignoreForHistory: true});
+                            pimcore.helpers.openAsset(parts[1], parts[2], { ignoreForHistory: true, ignoreNotFoundError: true});
                         } else if(parts[0] == "document") {
-                            pimcore.helpers.openDocument(parts[1], parts[2], { ignoreForHistory: true});
+                            pimcore.helpers.openDocument(parts[1], parts[2], { ignoreForHistory: true, ignoreNotFoundError: true});
                         } else if(parts[0] == "object") {
-                            pimcore.helpers.openObject(parts[1], parts[2], { ignoreForHistory: true});
+                            pimcore.helpers.openObject(parts[1], parts[2], { ignoreForHistory: true, ignoreNotFoundError: true});
                         }
                     }
                 }.bind(this, parts), 200);
@@ -1618,8 +1618,8 @@ pimcore.helpers.openImageCropper = function (imageId, data, saveCallback, config
 };
 
 /* this is here so that it can be opened in the parent window when in editmode frame */
-pimcore.helpers.openImageHotspotMarkerEditor = function (imageId, data, saveCallback) {
-    var editor = new pimcore.element.tag.imagehotspotmarkereditor(imageId, data, saveCallback);
+pimcore.helpers.openImageHotspotMarkerEditor = function (imageId, data, saveCallback, config) {
+    var editor = new pimcore.element.tag.imagehotspotmarkereditor(imageId, data, saveCallback, config);
     return editor;
 };
 
@@ -1627,6 +1627,23 @@ pimcore.helpers.openImageHotspotMarkerEditor = function (imageId, data, saveCall
 pimcore.helpers.editmode = {};
 
 pimcore.helpers.editmode.openLinkEditPanel = function (data, callback) {
+
+
+    var internalTypeField = new Ext.form.Hidden({
+        fieldLabel: 'internalType',
+        value: data.internalType,
+        name: 'internalType',
+        readOnly: true,
+        width: 520
+    });
+
+    var linkTypeField = new Ext.form.Hidden({
+        fieldLabel: 'linktype',
+        value: data.linktype,
+        name: 'linktype',
+        readOnly: true,
+        width: 520
+    });
 
     var fieldPath = new Ext.form.TextField({
         fieldLabel: t('path'),
@@ -1639,10 +1656,13 @@ pimcore.helpers.editmode.openLinkEditPanel = function (data, callback) {
             keyup: function (el) {
                 if(el.getValue().match(/^www\./)) {
                     el.setValue("http://" + el.getValue());
+                    internalTypeField.setValue(null);
+                    linkTypeField.setValue("direct");
                 }
             }
         }
     });
+
 
     fieldPath.on("render", function (el) {
         // add drop zone
@@ -1661,6 +1681,8 @@ pimcore.helpers.editmode.openLinkEditPanel = function (data, callback) {
             onNodeDrop : function (target, dd, e, data) {
                 var record = data.records[0];
                 if (record.data.type != "folder" && (record.data.elementType == "asset" || record.data.elementType == "document" || record.data.elementType == "object")) {
+                    internalTypeField.setValue(record.data.elementType);
+                    linkTypeField.setValue('internal');
                     fieldPath.setValue(record.data.path);
                     return true;
                 }
@@ -1684,6 +1706,10 @@ pimcore.helpers.editmode.openLinkEditPanel = function (data, callback) {
                         border: false,
                         defaultType: 'textfield',
                         items: [
+                            // do not change the order, the server-side works with setValues - setPath expects
+                            // the types are already set correctly
+                            internalTypeField,
+                            linkTypeField,
                             {
                                 fieldLabel: t('text'),
                                 name: 'text',
@@ -1700,6 +1726,8 @@ pimcore.helpers.editmode.openLinkEditPanel = function (data, callback) {
                                     handler: function () {
                                         pimcore.helpers.itemselector(false, function (item) {
                                             if (item) {
+                                                internalTypeField.setValue(item.type);
+                                                linkTypeField.setValue('internal');
                                                 fieldPath.setValue(item.fullpath);
                                                 return true;
                                             }
@@ -2718,12 +2746,12 @@ pimcore.helpers.showAbout = function () {
     var html = '<div class="pimcore_about_window">';
     html += '<br><img src="/pimcore/static6/img/logo-gray.svg" style="width: 300px;"><br>';
     html += '<br><b>Version: ' + pimcore.settings.version + '</b>';
-    html += '<br><b>Build: ' + pimcore.settings.build + '</b>';
-    html += '<br><br>&copy; by pimcore GmbH, Salzburg, Austria (<a href="http://www.pimcore.org/" target="_blank">pimcore.org</a>)';
+    html += '<br><b>Build: ' + pimcore.settings.build + '</b> (' + pimcore.settings.buildDate + ')';
+    html += '<br><br>&copy; by pimcore GmbH, Salzburg, Austria (<a href="https://pimcore.com/" target="_blank">pimcore.com</a>)';
     html += '<br>a proud member of the <a href="http://elements.at" target="_blank">elements group</a>';
     html += '<br><br><a href="https://github.com/pimcore/pimcore/blob/master/LICENSE.md" target="_blank">License</a> | ';
-    html += '<a href="https://www.pimcore.org/en/company/contact" target="_blank">Contact</a> | ';
-    html += '<a href="https://www.pimcore.org/en/company/team" target="_blank">Team</a>';
+    html += '<a href="https://pimcore.com/en/about/contact" target="_blank">Contact</a> | ';
+    html += '<a href="https://pimcore.com/en/about/team" target="_blank">Team</a>';
     html += '<img src="/pimcore/static6/img/austria-heart.svg" style="position:absolute;top:172px;right:45px;width:32px;">';
     html += '</div>';
 
@@ -2810,14 +2838,16 @@ pimcore.helpers.hideRedundantSeparators = function(menu) {
 pimcore.helpers.initMenuTooltips = function(){
 
     var items = $("[data-menu-tooltip]:not(.initialized)");
+    $('#pimcore_navigation li:not(:has(>svg))').addClass('compatibility');
 
     items.mouseenter(function (e) {
         $("#pimcore_tooltip").show();
         $("#pimcore_tooltip").html($(this).data("menu-tooltip"));
 
-        var offset = $(e.target).offset();
+        var closestEl = $(e.target).closest('[data-menu-tooltip]');
+        var offset = closestEl.offset();
         var top = offset.top;
-        top = top + ($(e.target).height() / 2);
+        top = top + (closestEl.height() / 2);
 
         $("#pimcore_tooltip").css({top: top, left: 60});
     });

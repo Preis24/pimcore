@@ -102,7 +102,14 @@ class AssetController extends ElementControllerBase implements EventedController
             }
 
             $iptcData = $asset->getIPTCData();
-            if (!empty($exifData)) {
+            if (!empty($iptcData)) {
+                // flatten data, to be displayed in grid
+                foreach ($iptcData as &$value) {
+                    if (is_array($value)) {
+                        $value = implode(', ', $value);
+                    }
+                }
+
                 $imageInfo['iptc'] = $iptcData;
             }
 
@@ -368,10 +375,28 @@ class AssetController extends ElementControllerBase implements EventedController
     {
         $asset = Asset::getById($request->get('id'));
 
+        $newFilename = Element\Service::getValidKey($_FILES['Filedata']['name'], 'asset');
+        $mimetype = Tool\Mime::detect($_FILES['Filedata']['tmp_name'], $newFilename);
+        $newType = Asset::getTypeFromMimeMapping($mimetype, $newFilename);
+
+        if ($newType != $asset->getType()) {
+            $translator = $this->get('translator');
+
+            return $this->json([
+                'success'=>false,
+                'message'=> sprintf($translator->trans('asset_type_change_not_allowed', [], 'admin'), $asset->getType(), $newType)
+            ]);
+        }
+
         $stream = fopen($_FILES['Filedata']['tmp_name'], 'r+');
         $asset->setStream($stream);
         $asset->setCustomSetting('thumbnails', null);
         $asset->setUserModification($this->getUser()->getId());
+        $newFilename = Element\Service::getValidKey($_FILES['Filedata']['name'], 'asset');
+        if ($newFilename != $asset->getFilename()) {
+            $newFilename = Element\Service::getSaveCopyName('asset', $newFilename, $asset->getParent());
+        }
+        $asset->setFilename($newFilename);
 
         if ($asset->isAllowed('publish')) {
             $asset->save();
@@ -435,7 +460,7 @@ class AssetController extends ElementControllerBase implements EventedController
             $parentAsset = Asset::getById($request->get('id'));
 
             $list = new Asset\Listing();
-            $list->setCondition("path LIKE '" . $parentAsset->getRealFullPath() . "/%'");
+            $list->setCondition('path LIKE ?', [$parentAsset->getRealFullPath() . '/%']);
             $list->setLimit(intval($request->get('amount')));
             $list->setOrderKey('LENGTH(path)', false);
             $list->setOrder('DESC');
@@ -516,7 +541,7 @@ class AssetController extends ElementControllerBase implements EventedController
                 if ($hasChilds) {
                     // get amount of childs
                     $list = new Asset\Listing();
-                    $list->setCondition("path LIKE '" . $asset->getRealFullPath() . "/%'");
+                    $list->setCondition('path LIKE ?', [$asset->getRealFullPath() . '/%']);
                     $childs = $list->getTotalCount();
                     $totalChilds += $childs;
 
@@ -748,10 +773,6 @@ class AssetController extends ElementControllerBase implements EventedController
             }
 
             if ($allowUpdate) {
-                if ($request->get('filename') || $request->get('parentId')) {
-                    $asset->getData();
-                }
-
                 if ($request->get('filename') != $asset->getFilename() and !$asset->isAllowed('rename')) {
                     unset($updateData['filename']);
                     Logger::debug('prevented renaming asset because of missing permissions ');
@@ -1417,7 +1438,8 @@ class AssetController extends ElementControllerBase implements EventedController
         }
 
         $conditionFilters = [];
-        $conditionFilters[] = "path LIKE '" . ($folder->getRealFullPath() == '/' ? "/%'" : $folder->getRealFullPath() . "/%'") ." AND type != 'folder'";
+        $list = new Asset\Listing();
+        $conditionFilters[] = 'path LIKE ' . ($folder->getRealFullPath() == '/' ? "'/%'" : $list->quote($folder->getRealFullPath() . '/%')) ." AND type != 'folder'";
 
         if (!$this->getUser()->isAdmin()) {
             $userIds = $this->getUser()->getRoles();
@@ -1431,13 +1453,11 @@ class AssetController extends ElementControllerBase implements EventedController
 
         $condition = implode(' AND ', $conditionFilters);
 
-        $list = Asset::getList([
-            'condition' => $condition,
-            'limit' => $limit,
-            'offset' => $start,
-            'orderKey' => 'filename',
-            'order' => 'asc'
-        ]);
+        $list->setCondition($condition);
+        $list->setLimit($limit);
+        $list->setOffset($start);
+        $list->setOrderKey('filename');
+        $list->setOrder('asc');
 
         $assets = [];
 
@@ -1509,7 +1529,7 @@ class AssetController extends ElementControllerBase implements EventedController
             if ($asset->hasChildren()) {
                 // get amount of children
                 $list = new Asset\Listing();
-                $list->setCondition("path LIKE '" . $asset->getRealFullPath() . "/%'");
+                $list->setCondition('path LIKE ?', [$asset->getRealFullPath() . '/%']);
                 $list->setOrderKey('LENGTH(path)', false);
                 $list->setOrder('ASC');
                 $childIds = $list->loadIdList();
@@ -2073,7 +2093,7 @@ class AssetController extends ElementControllerBase implements EventedController
                 $start = $request->get('start');
             }
 
-            $sortingSettings = \Pimcore\Admin\Helper\QueryParams::extractSortingSettings(array_merge($request->request->all(), $request->query->all()));
+            $sortingSettings = \Pimcore\Bundle\AdminBundle\Helper\QueryParams::extractSortingSettings(array_merge($request->request->all(), $request->query->all()));
             if ($sortingSettings['orderKey']) {
                 $orderKey = $sortingSettings['orderKey'];
                 if ($orderKey == 'fullpath') {
@@ -2083,11 +2103,13 @@ class AssetController extends ElementControllerBase implements EventedController
                 $order = $sortingSettings['order'];
             }
 
+            $list = new Asset\Listing();
+
             $conditionFilters = [];
             if ($request->get('only_direct_children') == 'true') {
                 $conditionFilters[] = 'parentId = ' . $folder->getId();
             } else {
-                $conditionFilters[] = "path LIKE '" . ($folder->getRealFullPath() == '/' ? "/%'" : $folder->getRealFullPath() . "/%'");
+                $conditionFilters[] = 'path LIKE ' . ($folder->getRealFullPath() == '/' ? "'/%'" : $list->quote($folder->getRealFullPath() . '/%'));
             }
 
             $conditionFilters[] = "type != 'folder'";
@@ -2097,28 +2119,32 @@ class AssetController extends ElementControllerBase implements EventedController
                 foreach ($filters as $filter) {
                     $operator = '=';
 
-                    if ($filter['type'] == 'string') {
+                    $filterField = $filter['property'];
+                    $filterOperator = $filter['operator'];
+                    $filterType = $filter['type'];
+
+                    if ($filterType == 'string') {
                         $operator = 'LIKE';
-                    } elseif ($filter['type'] == 'numeric') {
-                        if ($filter['comparison'] == 'lt') {
+                    } elseif ($filterType == 'numeric') {
+                        if ($filterOperator == 'lt') {
                             $operator = '<';
-                        } elseif ($filter['comparison'] == 'gt') {
+                        } elseif ($filterOperator == 'gt') {
                             $operator = '>';
-                        } elseif ($filter['comparison'] == 'eq') {
+                        } elseif ($filterOperator == 'eq') {
                             $operator = '=';
                         }
-                    } elseif ($filter['type'] == 'date') {
-                        if ($filter['comparison'] == 'lt') {
+                    } elseif ($filterType == 'date') {
+                        if ($filterOperator == 'lt') {
                             $operator = '<';
-                        } elseif ($filter['comparison'] == 'gt') {
+                        } elseif ($filterOperator == 'gt') {
                             $operator = '>';
-                        } elseif ($filter['comparison'] == 'eq') {
+                        } elseif ($filterOperator == 'eq') {
                             $operator = '=';
                         }
                         $filter['value'] = strtotime($filter['value']);
-                    } elseif ($filter['type'] == 'list') {
+                    } elseif ($filterType == 'list') {
                         $operator = '=';
-                    } elseif ($filter['type'] == 'boolean') {
+                    } elseif ($filterType == 'boolean') {
                         $operator = '=';
                         $filter['value'] = (int) $filter['value'];
                     }
@@ -2128,8 +2154,8 @@ class AssetController extends ElementControllerBase implements EventedController
                         $value = '%' . $value . '%';
                     }
 
-                    $field = '`' . $filter['field'] . '` ';
-                    if ($filter['field'] == 'fullpath') {
+                    $field = '`' . $filterField . '` ';
+                    if ($filterField == 'fullpath') {
                         $field = 'CONCAT(path,filename)';
                     }
 
@@ -2147,7 +2173,6 @@ class AssetController extends ElementControllerBase implements EventedController
                                                  )';
             }
 
-            $list = new Asset\Listing();
             $condition = implode(' AND ', $conditionFilters);
             $list->setCondition($condition);
             $list->setLimit($limit);

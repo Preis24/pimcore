@@ -10,19 +10,19 @@ $browser        = new \Pimcore\Browser();
 $browserVersion = (int)$browser->getVersion();
 $platform       = $browser->getPlatform();
 
-if ($browser->getBrowser() == \Pimcore\Browser::BROWSER_FIREFOX && $browserVersion >= 39) {
+if ($browser->getBrowser() == \Pimcore\Browser::BROWSER_FIREFOX && $browserVersion >= 52) {
     $supported = true;
 }
 if ($browser->getBrowser() == \Pimcore\Browser::BROWSER_IE && $browserVersion >= 11) {
     $supported = true;
 }
-if ($browser->getBrowser() == \Pimcore\Browser::BROWSER_CHROME && $browserVersion >= 40) {
+if ($browser->getBrowser() == \Pimcore\Browser::BROWSER_CHROME && $browserVersion >= 58) {
     $supported = true;
 }
-if ($browser->getBrowser() == \Pimcore\Browser::BROWSER_SAFARI && $browserVersion >= 7) {
+if ($browser->getBrowser() == \Pimcore\Browser::BROWSER_SAFARI && $browserVersion >= 10) {
     $supported = true;
 }
-if ($browser->getBrowser() == \Pimcore\Browser::BROWSER_OPERA && $browserVersion >= 30) {
+if ($browser->getBrowser() == \Pimcore\Browser::BROWSER_OPERA && $browserVersion >= 42) {
     $supported = true;
 }
 
@@ -54,7 +54,7 @@ $config = $this->config;
 <div id="vcenter" class="<?= ($config->general->loginscreencustomimage ? "customimage" : ""); ?>">
     <div id="hcenter">
         <div id="header">
-            <img src="/pimcore/static6/img/logo-white.svg">
+            <img src="/pimcore/static6/img/logo-claim-gray.svg">
         </div>
         <div id="content">
             <div id="loginform">
@@ -131,6 +131,6 @@ $config = $this->config;
         $("#username").select();
     </script>
 
-    <script type="text/javascript" src="https://www.pimcore.org/imageservice/"></script>
+    <script type="text/javascript" src="https://liveupdate.pimcore.org/imageservice"></script>
 
 <?php $view->slots()->stop() ?>

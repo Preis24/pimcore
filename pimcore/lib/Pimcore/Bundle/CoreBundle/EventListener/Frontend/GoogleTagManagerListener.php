@@ -14,14 +14,16 @@
 
 namespace Pimcore\Bundle\CoreBundle\EventListener\Frontend;
 
+use Pimcore\Bundle\CoreBundle\EventListener\Traits\PimcoreContextAwareTrait;
 use Pimcore\Bundle\CoreBundle\EventListener\Traits\ResponseInjectionTrait;
-use Pimcore\Service\Request\PimcoreContextResolver;
+use Pimcore\Http\Request\Resolver\PimcoreContextResolver;
 use Pimcore\Tool;
 use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
 
-class GoogleTagManagerListener extends AbstractFrontendListener
+class GoogleTagManagerListener
 {
     use ResponseInjectionTrait;
+    use PimcoreContextAwareTrait;
 
     /**
      * @var bool
@@ -67,6 +69,12 @@ class GoogleTagManagerListener extends AbstractFrontendListener
         }
 
         if (!$this->matchesPimcoreContext($request, PimcoreContextResolver::CONTEXT_DEFAULT)) {
+            return;
+        }
+
+        // It's standard industry practice to exclude tracking if the request includes the header 'X-Purpose:preview'
+        $serverVars = $event->getRequest()->server;
+        if ($serverVars->get('HTTP_X_PURPOSE') == 'preview') {
             return;
         }
 

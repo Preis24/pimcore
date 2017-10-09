@@ -21,7 +21,7 @@ class Update
     /**
      * @var string
      */
-    public static $updateHost = 'liveupdate.pimcore.org';
+    private static $updateHost = 'liveupdate.pimcore.org';
 
     /**
      * @var bool
@@ -69,11 +69,12 @@ class Update
 
         self::cleanup();
 
+        $updateInfoUrl = 'https://' . self::$updateHost . '/get-update-info?revision=' . $currentRev;
         if (PIMCORE_DEVMODE) {
-            $xmlRaw = Tool::getHttpData('https://' . self::$updateHost . '/getUpdateInfo.php?devmode=1&revision=' . $currentRev);
-        } else {
-            $xmlRaw = Tool::getHttpData('https://' . self::$updateHost . '/getUpdateInfo.php?revision=' . $currentRev);
+            $updateInfoUrl .= '&devmode=1';
         }
+
+        $xmlRaw = Tool::getHttpData($updateInfoUrl);
 
         $xml = simplexml_load_string($xmlRaw, null, LIBXML_NOCDATA);
 
@@ -123,7 +124,7 @@ class Update
             $currentRev = Version::$revision;
         }
 
-        $xmlRaw = Tool::getHttpData('https://' . self::$updateHost . '/getDownloads.php?from=' . $currentRev . '&to=' . $toRevision);
+        $xmlRaw = Tool::getHttpData('https://' . self::$updateHost . '/get-downloads?from=' . $currentRev . '&to=' . $toRevision);
         $xml = simplexml_load_string($xmlRaw, null, LIBXML_NOCDATA);
 
         $downloadJobs = [];
@@ -280,7 +281,7 @@ class Update
                 }
 
                 if (array_key_exists('id', $file) && $file['id']) {
-                    // this is the new style, see https://www.pimcore.org/issues/browse/PIMCORE-2722
+                    // this is the new style
                     $srcFile = PIMCORE_SYSTEM_TEMP_DIRECTORY . '/update/'.$revision.'/files/' . $file['id'] . '-' . $file['revision'];
                 } else {
                     // this is the old style, which we still have to support here, otherwise there's the risk that the
@@ -293,7 +294,7 @@ class Update
                 if (!self::$dryRun) {
                     if ($file['path'] == '/composer.json') {
                         // composer.json needs some special processing
-                        self::installComposerJson($srcFile, $destFile);
+                        self::installComposerJson($srcFile, PIMCORE_COMPOSER_FILE_PATH . $file['path']);
                     } else {
                         copy($srcFile, $destFile);
                     }
@@ -411,7 +412,7 @@ class Update
      */
     public static function composerUpdate($options = [])
     {
-        $composerLock = PIMCORE_PROJECT_ROOT . '/composer.lock';
+        $composerLock = PIMCORE_COMPOSER_FILE_PATH . '/composer.lock';
         if (file_exists($composerLock)) {
             @unlink($composerLock);
         }
@@ -423,7 +424,7 @@ class Update
 
             $composerOptions = array_merge(['-n'], $options);
 
-            $process = new Process($composerPath . ' update ' . implode(' ', $composerOptions) . ' -d ' . PIMCORE_PROJECT_ROOT);
+            $process = new Process($composerPath . ' update ' . implode(' ', $composerOptions) . ' -d ' . PIMCORE_COMPOSER_FILE_PATH);
             $process->setTimeout(900);
             $process->mustRun();
         } catch (\Exception $e) {
@@ -446,7 +447,7 @@ class Update
 
         try {
             $composerPath = \Pimcore\Tool\Console::getExecutable('composer');
-            $process = new Process($composerPath . ' dumpautoload -d ' . PIMCORE_PROJECT_ROOT);
+            $process = new Process($composerPath . ' dumpautoload -d ' . PIMCORE_COMPOSER_FILE_PATH);
             $process->setTimeout(300);
             $process->mustRun();
         } catch (\Exception $e) {

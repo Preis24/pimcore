@@ -13,9 +13,21 @@
  */
 
 use Pimcore\Tool;
+use Symfony\Component\Debug\Debug;
+use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 
-require_once __DIR__ . '/../pimcore/config/bootstrap.php';
+if (!defined('PIMCORE_PROJECT_ROOT')) {
+    define(
+        'PIMCORE_PROJECT_ROOT',
+        getenv('PIMCORE_PROJECT_ROOT')
+            ?: getenv('REDIRECT_PIMCORE_PROJECT_ROOT')
+            ?: realpath(__DIR__ . '/..')
+    );
+}
+
+require_once PIMCORE_PROJECT_ROOT . '/pimcore/config/bootstrap.php';
 
 $request = Request::createFromGlobals();
 
@@ -23,8 +35,19 @@ $request = Request::createFromGlobals();
 // request stack available yet
 Tool::setCurrentRequest($request);
 
+// redirect to installer if pimcore is not installed
+if (!is_file(\Pimcore\Config::locateConfigFile('system.php'))) {
+    if (file_exists(__DIR__ . '/install.php')) {
+        (new RedirectResponse('/install', Response::HTTP_FOUND))->send();
+        return;
+    }
+
+    Debug::enable(E_ALL, true);
+    throw new RuntimeException('Pimcore is not installed and the installer is not available. Please add the installer or install via command line.');
+}
+
 /** @var \Pimcore\Kernel $kernel */
-$kernel = require_once __DIR__ . '/../pimcore/config/kernel.php';
+$kernel = require_once PIMCORE_PROJECT_ROOT . '/pimcore/config/kernel.php';
 
 // reset current request - will be read from request stack from now on
 Tool::setCurrentRequest(null);

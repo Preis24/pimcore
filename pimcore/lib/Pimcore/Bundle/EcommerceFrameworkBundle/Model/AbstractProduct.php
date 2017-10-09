@@ -22,7 +22,7 @@ use Pimcore\Bundle\EcommerceFrameworkBundle\PriceSystem\IPriceInfo;
 /**
  * Abstract base class for pimcore objects who should be used as products in the online shop framework
  */
-class AbstractProduct extends \Pimcore\Model\Object\Concrete implements IIndexable, ICheckoutable, IProduct
+class AbstractProduct extends \Pimcore\Model\DataObject\Concrete implements IIndexable, ICheckoutable, IProduct
 {
     // =============================================
     //     IIndexable Methods
@@ -216,23 +216,5 @@ class AbstractProduct extends \Pimcore\Model\Object\Concrete implements IIndexab
     public function getOSAvailabilityInfo($quantity = null)
     {
         return $this->getAvailabilitySystemImplementation()->getAvailabilityInfo($this, $quantity);
-    }
-
-    /**
-     * @static
-     *
-     * @param int $id
-     *
-     * @return null|\Pimcore\Model\Object\AbstractObject
-     */
-    public static function getById($id)
-    {
-        $object = \Pimcore\Model\Object\AbstractObject::getById($id);
-
-        if ($object instanceof AbstractProduct) {
-            return $object;
-        }
-
-        return null;
     }
 }

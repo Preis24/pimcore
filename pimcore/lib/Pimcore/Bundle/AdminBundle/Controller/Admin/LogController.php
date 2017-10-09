@@ -58,7 +58,7 @@ class LogController extends AdminController implements EventedControllerInterfac
         $limit = $request->get('limit');
 
         $orderby = 'ORDER BY id DESC';
-        $sortingSettings = \Pimcore\Admin\Helper\QueryParams::extractSortingSettings(array_merge($request->request->all(), $request->query->all()));
+        $sortingSettings = \Pimcore\Bundle\AdminBundle\Helper\QueryParams::extractSortingSettings(array_merge($request->request->all(), $request->query->all()));
         if ($sortingSettings['orderKey']) {
             $orderby = 'ORDER BY ' . $sortingSettings['orderKey'] . ' ' . $sortingSettings['order'];
         }
@@ -200,8 +200,9 @@ class LogController extends AdminController implements EventedControllerInterfac
         $filePath = $request->get('filePath');
         $filePath = PIMCORE_PROJECT_ROOT . '/' . $filePath;
         $filePath = realpath($filePath);
+        $fileObjectPath = realpath(PIMCORE_LOG_FILEOBJECT_DIRECTORY);
 
-        if (!preg_match('@^' . PIMCORE_LOG_FILEOBJECT_DIRECTORY . '@', $filePath)) {
+        if (!preg_match('@^' . $fileObjectPath . '@', $filePath)) {
             throw new AccessDeniedHttpException('Accessing file out of scope');
         }
 

@@ -84,12 +84,10 @@ class AssetsInstaller
      */
     public function buildProcess(array $options = []): Process
     {
-        $resolver = new OptionsResolver();
-        $this->configureOptions($resolver);
-
-        $options = $resolver->resolve($options);
+        $options = $this->resolveOptions($options);
 
         $builder = new ProcessBuilder([
+            'bin/console',
             'assets:install',
             'web',
             '--env=' . $this->kernel->getEnvironment()
@@ -97,7 +95,7 @@ class AssetsInstaller
 
         $builder
             ->setWorkingDirectory(PIMCORE_PROJECT_ROOT)
-            ->setPrefix('bin/console');
+            ->setPrefix(Console::getPhpCli());
 
         if (!$options['ansi']) {
             $builder->add('--no-ansi');
@@ -114,6 +112,22 @@ class AssetsInstaller
         }
 
         return $builder->getProcess();
+    }
+
+    /**
+     * Takes a set of options as defined in configureOptions and validates and merges them
+     * with values from composer.json
+     *
+     * @param array $options
+     *
+     * @return array
+     */
+    public function resolveOptions(array $options = [])
+    {
+        $resolver = new OptionsResolver();
+        $this->configureOptions($resolver);
+
+        return $resolver->resolve($options);
     }
 
     private function configureOptions(OptionsResolver $resolver)

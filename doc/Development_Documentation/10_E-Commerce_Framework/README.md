@@ -37,8 +37,8 @@ it is a set of tools and functionality to help building e-commerce applications 
 - Tools for working with and managing Orders
 - Concepts for setting up multi tenant and multi shop solutions
 
-For a first impression have a look at our [E-Commerce Demo](http://ecommercedemo.pimcore.org). For more complex solutions
-have a look at our [case studies](https://www.pimcore.org/en/resources/casestudies). 
+For a first impression have a look at our [Advanced Demo](https://demo-advanced.pimcore.org/). For more complex solutions
+have a look at our [case studies](https://pimcore.com/en/customers?industry=&capability=618). 
 
 
 ## Working With E-Commerce Framework
@@ -46,7 +46,7 @@ have a look at our [case studies](https://www.pimcore.org/en/resources/casestudi
 Following aspects are short cuts into the documentation for start working with the E-Commerce Framework: 
 
 - [Architecture Overview](./01_Architecture_Overview.md)
-- [Installation and Configuration](./03_Installation.md)
+- [Installation](./03_Installation.md) and [Configuration](./04_Configuration)
 - [Indexing and Listing Products](./05_Index_Service/README.md)
 - [Filtering Products](./07_Filter_Service.md)
 - [Working with Prices](./09_Working_with_Prices/README.md)

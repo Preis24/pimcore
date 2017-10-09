@@ -439,8 +439,11 @@ function recursiveCopy($source, $destination)
 
 function p_r()
 {
+    $cloner = new \Symfony\Component\VarDumper\Cloner\VarCloner();
+    $dumper = 'cli' === PHP_SAPI ? new \Symfony\Component\VarDumper\Dumper\CliDumper() : new \Symfony\Component\VarDumper\Dumper\HtmlDumper();
+
     foreach (func_get_args() as $var) {
-        \Symfony\Component\VarDumper\VarDumper::dump($var);
+        $dumper->dump($cloner->cloneVar($var));
     }
 }
 

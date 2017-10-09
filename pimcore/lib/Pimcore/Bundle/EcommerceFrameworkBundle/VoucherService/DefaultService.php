@@ -17,14 +17,48 @@ namespace Pimcore\Bundle\EcommerceFrameworkBundle\VoucherService;
 use Pimcore\Bundle\EcommerceFrameworkBundle\CartManager\ICart;
 use Pimcore\Bundle\EcommerceFrameworkBundle\Exception\VoucherServiceException;
 use Pimcore\Bundle\EcommerceFrameworkBundle\Model\AbstractOrder;
+use Symfony\Component\OptionsResolver\OptionsResolver;
 
 class DefaultService implements IVoucherService
 {
-    public $sysConfig;
+    /**
+     * @var int
+     */
+    protected $reservationMinutesThreshold;
 
-    public function __construct($config)
+    /**
+     * @var int
+     */
+    protected $statisticsDaysThreshold;
+
+    public function __construct(array $options = [])
     {
-        $this->sysConfig = $config;
+        $resolver = new OptionsResolver();
+        $this->configureOptions($resolver);
+
+        $this->processOptions($resolver->resolve($options));
+    }
+
+    protected function processOptions(array $options)
+    {
+        $this->reservationMinutesThreshold = $options['reservation_minutes_threshold'];
+        $this->statisticsDaysThreshold = $options['statistics_days_threshold'];
+    }
+
+    protected function configureOptions(OptionsResolver $resolver)
+    {
+        $resolver->setRequired([
+            'reservation_minutes_threshold',
+            'statistics_days_threshold'
+        ]);
+
+        $resolver->setDefaults([
+            'reservation_minutes_threshold' => 5,
+            'statistics_days_threshold'     => 30
+        ]);
+
+        $resolver->setAllowedTypes('reservation_minutes_threshold', 'int');
+        $resolver->setAllowedTypes('statistics_days_threshold', 'int');
     }
 
     /**
@@ -101,12 +135,12 @@ class DefaultService implements IVoucherService
      * Gets the correct token manager and calls removeAppliedTokenFromOrder(), which cleans up the
      * token usage and the ordered token object if necessary, removes the token object from the order.
      *
-     * @param \Pimcore\Model\Object\OnlineShopVoucherToken $tokenObject
+     * @param \Pimcore\Model\DataObject\OnlineShopVoucherToken $tokenObject
      * @param AbstractOrder $order
      *
      * @return bool
      */
-    public function removeAppliedTokenFromOrder(\Pimcore\Model\Object\OnlineShopVoucherToken $tokenObject, AbstractOrder $order)
+    public function removeAppliedTokenFromOrder(\Pimcore\Model\DataObject\OnlineShopVoucherToken $tokenObject, AbstractOrder $order)
     {
         if ($tokenManager = $tokenObject->getVoucherSeries()->getTokenManager()) {
             $tokenManager->removeAppliedTokenFromOrder($tokenObject, $order);
@@ -136,18 +170,18 @@ class DefaultService implements IVoucherService
     public function cleanUpReservations($seriesId = null)
     {
         if (isset($seriesId)) {
-            return Reservation::cleanUpReservations($this->sysConfig->reservations->duration, $seriesId);
+            return Reservation::cleanUpReservations($this->reservationMinutesThreshold, $seriesId);
         } else {
-            return Reservation::cleanUpReservations($this->sysConfig->reservations->duration);
+            return Reservation::cleanUpReservations($this->reservationMinutesThreshold);
         }
     }
 
     /**
-     * @param \Pimcore\Model\Object\OnlineShopVoucherSeries $series
+     * @param \Pimcore\Model\DataObject\OnlineShopVoucherSeries $series
      *
      * @return bool
      */
-    public function cleanUpVoucherSeries(\Pimcore\Model\Object\OnlineShopVoucherSeries $series)
+    public function cleanUpVoucherSeries(\Pimcore\Model\DataObject\OnlineShopVoucherSeries $series)
     {
         return Token\Listing::cleanUpAllTokens($series->getId());
     }
@@ -160,9 +194,9 @@ class DefaultService implements IVoucherService
     public function cleanUpStatistics($seriesId = null)
     {
         if (isset($seriesId)) {
-            return Statistic::cleanUpStatistics($this->sysConfig->statistics->duration, $seriesId);
+            return Statistic::cleanUpStatistics($this->statisticsDaysThreshold, $seriesId);
         } else {
-            return Statistic::cleanUpStatistics($this->sysConfig->statistics->duration);
+            return Statistic::cleanUpStatistics($this->statisticsDaysThreshold);
         }
     }
 
@@ -174,7 +208,7 @@ class DefaultService implements IVoucherService
     public function getTokenManager($code)
     {
         if ($token = Token::getByCode($code)) {
-            if ($series = \Pimcore\Model\Object\OnlineShopVoucherSeries::getById($token->getVoucherSeriesId())) {
+            if ($series = \Pimcore\Model\DataObject\OnlineShopVoucherSeries::getById($token->getVoucherSeriesId())) {
                 return $series->getTokenManager();
             }
         }

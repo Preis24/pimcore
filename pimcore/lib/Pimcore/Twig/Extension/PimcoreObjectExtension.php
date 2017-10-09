@@ -18,8 +18,9 @@ declare(strict_types=1);
 namespace Pimcore\Twig\Extension;
 
 use Pimcore\Model\Asset;
+use Pimcore\Model\DataObject;
 use Pimcore\Model\Document;
-use Pimcore\Model\Object;
+use Pimcore\Model\Site;
 
 class PimcoreObjectExtension extends \Twig_Extension
 {
@@ -27,10 +28,11 @@ class PimcoreObjectExtension extends \Twig_Extension
     {
         // simple object access functions in case documents/assets/objects need to be loaded directly in the template
         return [
-            new \Twig_SimpleFunction('pimcore_document', [Document::class, 'getById']),
-            new \Twig_SimpleFunction('pimcore_asset', [Asset::class, 'getById']),
-            new \Twig_SimpleFunction('pimcore_object', [Object\AbstractObject::class, 'getById']),
-            new \Twig_SimpleFunction('pimcore_document_wrap_hardlink', [Document\Hardlink\Service::class, 'wrap']),
+            new \Twig_Function('pimcore_document', [Document::class, 'getById']),
+            new \Twig_Function('pimcore_site', [Site::class, 'getById']),
+            new \Twig_Function('pimcore_asset', [Asset::class, 'getById']),
+            new \Twig_Function('pimcore_object', [DataObject\AbstractObject::class, 'getById']),
+            new \Twig_Function('pimcore_document_wrap_hardlink', [Document\Hardlink\Service::class, 'wrap']),
         ];
     }
 }

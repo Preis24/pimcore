@@ -111,7 +111,6 @@ class IndexController extends AdminController
 
         if ($request->get('filtergroup')) {
             $filtergroups = $request->get('filtergroup');
-            $filtergroups = explode(',', $filtergroups);
 
             $indexColumns = [];
             foreach ($filtergroups as $filtergroup) {
@@ -159,7 +158,8 @@ class IndexController extends AdminController
     public function getAllTenantsAction()
     {
         $tenants = Factory::getInstance()->getAllTenants();
-        $data = [['key' => '', 'name' => $this->trans('default')]];
+        $data = [];
+
         if ($tenants) {
             foreach ($tenants as $tenant) {
                 $data[] = ['key' => $tenant, 'name' => $this->trans($tenant)];

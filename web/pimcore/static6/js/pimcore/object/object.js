@@ -57,10 +57,16 @@ pimcore.object.object = Class.create(pimcore.object.abstract, {
             params.layoutId = this.options.layoutId;
         }
 
+        var options = this.options || {};
+
         Ext.Ajax.request({
             url: "/admin/object/get",
             params: params,
-            success: this.getDataComplete.bind(this)
+            ignoreErrors: options.ignoreNotFoundError,
+            success: this.getDataComplete.bind(this),
+            failure: function() {
+                this.forgetOpenTab();
+            }.bind(this)
         });
     },
 
@@ -81,9 +87,7 @@ pimcore.object.object = Class.create(pimcore.object.abstract, {
         catch (e) {
             console.log(e);
 
-            pimcore.globalmanager.remove("object_" + this.id);
-            pimcore.helpers.forgetOpenTab("object_" + this.id + "_object");
-            pimcore.helpers.forgetOpenTab("object_" + this.id + "_variant");
+            this.forgetOpenTab();
 
             if (this.toolbar) {
                 this.toolbar.destroy();
@@ -190,9 +194,7 @@ pimcore.object.object = Class.create(pimcore.object.abstract, {
 
         // remove this instance when the panel is closed
         this.tab.on("destroy", function () {
-            pimcore.globalmanager.remove("object_" + this.id);
-            pimcore.helpers.forgetOpenTab("object_" + this.id + "_object");
-            pimcore.helpers.forgetOpenTab("object_" + this.id + "_variant");
+            this.forgetOpenTab();
         }.bind(this));
 
         this.tab.on("afterrender", function (tabId) {
@@ -210,6 +212,13 @@ pimcore.object.object = Class.create(pimcore.object.abstract, {
 
         // recalculate the layout
         pimcore.layout.refresh();
+    },
+
+    forgetOpenTab: function() {
+        pimcore.globalmanager.remove("object_" + this.id);
+        pimcore.helpers.forgetOpenTab("object_" + this.id + "_object");
+        pimcore.helpers.forgetOpenTab("object_" + this.id + "_variant");
+
     },
 
     getTabPanel: function () {
@@ -333,7 +342,8 @@ pimcore.object.object = Class.create(pimcore.object.abstract, {
 
             this.toolbarButtons.save = new Ext.SplitButton({
                 text: t('save'),
-                iconCls: "pimcore_icon_save",
+                iconCls: "pimcore_icon_save_white",
+                cls: "pimcore_save_button",
                 scale: "medium",
                 handler: this.save.bind(this, "unpublish"),
                 menu:[{
@@ -346,7 +356,8 @@ pimcore.object.object = Class.create(pimcore.object.abstract, {
 
             this.toolbarButtons.publish = new Ext.SplitButton({
                 text: t('save_and_publish'),
-                iconCls: "pimcore_icon_publish",
+                iconCls: "pimcore_icon_save_white",
+                cls: "pimcore_save_button",
                 scale: "medium",
                 handler: this.publish.bind(this),
                 menu: [{
@@ -506,15 +517,11 @@ pimcore.object.object = Class.create(pimcore.object.abstract, {
                 overflowHandler: 'scroller'
             });
 
-            this.toolbar.on("afterrender", function () {
-                window.setTimeout(function () {
-                    if (!this.data.general.o_published) {
-                        this.toolbarButtons.unpublish.hide();
-                    } else if (this.isAllowed("publish")) {
-                        this.toolbarButtons.save.hide();
-                    }
-                }.bind(this), 500);
-            }.bind(this));
+            if (!this.data.general.o_published) {
+                this.toolbarButtons.unpublish.hide();
+            } else if (this.isAllowed("publish")) {
+                this.toolbarButtons.save.hide();
+            }
         }
 
         return this.toolbar;

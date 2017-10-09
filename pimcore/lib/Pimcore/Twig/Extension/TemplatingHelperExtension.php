@@ -49,6 +49,7 @@ class TemplatingHelperExtension extends \Twig_Extension
             'headTitle'    => 'pimcore_head_title',
             'inlineScript' => 'pimcore_inline_script',
             'placeholder'  => 'pimcore_placeholder',
+            'cache'        => 'pimcore_cache',
             'pimcoreUrl'   => [
                 'name'    => 'pimcore_url',
                 'is_safe' => null
@@ -79,7 +80,7 @@ class TemplatingHelperExtension extends \Twig_Extension
                 return $this->callHelper($helperName, func_get_args());
             };
 
-            $functions[] = new \Twig_SimpleFunction($functionName, $callable, $options);
+            $functions[] = new \Twig_Function($functionName, $callable, $options);
         }
 
         return $functions;

@@ -25,6 +25,7 @@ use Pimcore\Logger;
 use Pimcore\Model;
 use Pimcore\Model\Document;
 use Pimcore\Model\Webservice;
+use Pimcore\Templating\Model\ViewModel;
 use Pimcore\Templating\Model\ViewModelInterface;
 use Pimcore\Tool\HtmlUtils;
 use Pimcore\View;
@@ -110,6 +111,10 @@ abstract class Tag extends Model\AbstractModel implements Model\Document\Tag\Tag
         $tag->setName($name);
         $tag->setDocumentId($documentId);
         $tag->setController($controller);
+        if (!$view) {
+            // needed for the RESTImporter. For areabricks define a default implementation. Otherwise cannot find a tag handler.
+            $view = new ViewModel();
+        }
         $tag->setView($view);
         $tag->setEditmode($editmode);
         $tag->setOptions($config);
@@ -439,7 +444,7 @@ abstract class Tag extends Model\AbstractModel implements Model\Document\Tag\Tag
             } else {
                 $return = $this->frontend();
             }
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             if (\Pimcore::inDebugMode()) {
                 // the __toString method isn't allowed to throw exceptions
                 $return = '<b style="color:#f00">' . $e->getMessage().'</b><br/>'.$e->getTraceAsString();
@@ -623,7 +628,7 @@ abstract class Tag extends Model\AbstractModel implements Model\Document\Tag\Tag
         }
 
         // check for persona content
-        if ($document && $document instanceof Document\Page && $document->getUsePersona()) {
+        if ($document && $document instanceof Document\Page) {
             $name = $document->getPersonaElementName($name);
         }
 

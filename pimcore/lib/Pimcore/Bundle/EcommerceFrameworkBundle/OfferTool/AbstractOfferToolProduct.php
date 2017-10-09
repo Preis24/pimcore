@@ -19,12 +19,12 @@ use Pimcore\Bundle\EcommerceFrameworkBundle\Factory;
 use Pimcore\Bundle\EcommerceFrameworkBundle\Model\ICheckoutable;
 use Pimcore\Bundle\EcommerceFrameworkBundle\PriceSystem\AbstractPriceInfo;
 use Pimcore\Bundle\EcommerceFrameworkBundle\PriceSystem\IPriceInfo;
-use Pimcore\Model\Object\AbstractObject;
+use Pimcore\Model\DataObject\AbstractObject;
 
 /**
  * Abstract base class for pimcore objects who should be used as custom products in the offer tool
  */
-class AbstractOfferToolProduct extends \Pimcore\Model\Object\Concrete implements ICheckoutable
+class AbstractOfferToolProduct extends \Pimcore\Model\DataObject\Concrete implements ICheckoutable
 {
     // =============================================
     //     ICheckoutable Methods
@@ -151,12 +151,13 @@ class AbstractOfferToolProduct extends \Pimcore\Model\Object\Concrete implements
      * @static
      *
      * @param int $id
+     * @param bool $force
      *
      * @return null|AbstractObject
      */
-    public static function getById($id)
+    public static function getById($id, $force = false)
     {
-        $object = AbstractObject::getById($id);
+        $object = AbstractObject::getById($id, $force);
 
         if ($object instanceof AbstractOfferToolProduct) {
             return $object;

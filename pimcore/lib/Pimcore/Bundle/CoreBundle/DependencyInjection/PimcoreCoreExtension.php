@@ -14,11 +14,16 @@
 
 namespace Pimcore\Bundle\CoreBundle\DependencyInjection;
 
+use Pimcore\Bundle\CoreBundle\EventListener\TranslationDebugListener;
+use Pimcore\Http\Context\PimcoreContextGuesser;
 use Pimcore\Loader\ImplementationLoader\ClassMapLoader;
 use Pimcore\Loader\ImplementationLoader\PrefixLoader;
+use Pimcore\Migrations\Configuration\ConfigurationFactory;
 use Pimcore\Model\Document\Tag\Loader\PrefixLoader as DocumentTagPrefixLoader;
+use Pimcore\Model\Factory;
 use Pimcore\Routing\Loader\AnnotatedRouteControllerLoader;
 use Pimcore\Tool\ArrayUtils;
+use Pimcore\Translation\Translator;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\Config\Loader\LoaderInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -46,7 +51,7 @@ class PimcoreCoreExtension extends Extension implements PrependExtensionInterfac
     {
         // TODO use ConfigurableExtension or getExtension()??
         $configuration = new Configuration();
-        $config        = $this->processConfiguration($configuration, $configs);
+        $config = $this->processConfiguration($configuration, $configs);
 
         // bundle manager/locator config
         $container->setParameter('pimcore.extensions.bundles.search_paths', $config['bundles']['search_paths']);
@@ -75,16 +80,29 @@ class PimcoreCoreExtension extends Extension implements PrependExtensionInterfac
         );
 
         $loader->load('services.yml');
+        $loader->load('services_routing.yml');
+        $loader->load('extensions.yml');
+        $loader->load('request_response.yml');
+        $loader->load('l10n.yml');
+        $loader->load('argument_resolvers.yml');
+        $loader->load('implementation_factories.yml');
+        $loader->load('documents.yml');
         $loader->load('event_listeners.yml');
         $loader->load('templating.yml');
         $loader->load('profiler.yml');
+        $loader->load('migrations.yml');
+        $loader->load('aliases.yml');
 
         $this->configureImplementationLoaders($container, $config);
         $this->configureModelFactory($container, $config);
         $this->configureDocumentEditableNamingStrategy($container, $config);
         $this->configureRouting($container, $config['routing']);
         $this->configureCache($container, $loader, $config);
+        $this->configureTranslations($container, $config['translations']);
         $this->configurePasswordEncoders($container, $config);
+        $this->configureAdapterFactories($container, $config['newsletter']['source_adapters'], 'pimcore.newsletter.address_source_adapter.factories', 'Newsletter Address Source Adapter Factory');
+        $this->configureAdapterFactories($container, $config['custom_report']['adapters'], 'pimcore.custom_report.adapter.factories', 'Custom Report Adapter Factory');
+        $this->configureMigrations($container, $config['migrations']);
 
         // load engine specific configuration only if engine is active
         $configuredEngines = ['twig', 'php'];
@@ -108,7 +126,7 @@ class PimcoreCoreExtension extends Extension implements PrependExtensionInterfac
      */
     private function configureModelFactory(ContainerBuilder $container, array $config)
     {
-        $service = $container->getDefinition('pimcore.model.factory');
+        $service = $container->getDefinition(Factory::class);
 
         $classMapLoader = new Definition(ClassMapLoader::class, [$config['models']['class_overrides']]);
         $classMapLoader->setPublic(false);
@@ -138,16 +156,16 @@ class PimcoreCoreExtension extends Extension implements PrependExtensionInterfac
     private function configureImplementationLoaders(ContainerBuilder $container, array $config)
     {
         $services = [
-            'pimcore.implementation_loader.document.tag'  => [
-                'config'       => $config['documents']['tags'],
+            'pimcore.implementation_loader.document.tag' => [
+                'config' => $config['documents']['tags'],
                 'prefixLoader' => DocumentTagPrefixLoader::class
             ],
-            'pimcore.implementation_loader.object.data'  => [
-                'config'       => $config['objects']['class_definitions']['data'],
+            'pimcore.implementation_loader.object.data' => [
+                'config' => $config['objects']['class_definitions']['data'],
                 'prefixLoader' => PrefixLoader::class
             ],
-            'pimcore.implementation_loader.object.layout'  => [
-                'config'       => $config['objects']['class_definitions']['layout'],
+            'pimcore.implementation_loader.object.layout' => [
+                'config' => $config['objects']['class_definitions']['layout'],
                 'prefixLoader' => PrefixLoader::class
             ]
         ];
@@ -194,8 +212,8 @@ class PimcoreCoreExtension extends Extension implements PrependExtensionInterfac
      * Configure pimcore core cache
      *
      * @param ContainerBuilder $container
-     * @param LoaderInterface  $loader
-     * @param array            $config
+     * @param LoaderInterface $loader
+     * @param array $config
      */
     private function configureCache(ContainerBuilder $container, LoaderInterface $loader, array $config)
     {
@@ -255,6 +273,25 @@ class PimcoreCoreExtension extends Extension implements PrependExtensionInterfac
         $container->setAlias('pimcore.cache.core.pool', $coreCachePool);
     }
 
+    private function configureTranslations(ContainerBuilder $container, array $config)
+    {
+        // set translator to case insensitive
+        if ($config['case_insensitive']) {
+            $definition = $container->getDefinition(Translator::class);
+            $definition->setArgument('$caseInsensitive', $config['case_insensitive']);
+        }
+
+        $parameter = $config['debugging']['parameter'];
+
+        // remove the listener as it isn't needed at all if it is disabled or the parameter is empty
+        if (!$config['debugging']['enabled'] || empty($parameter)) {
+            $container->removeDefinition(TranslationDebugListener::class);
+        } else {
+            $definition = $container->getDefinition(TranslationDebugListener::class);
+            $definition->setArgument('$parameterName', $parameter);
+        }
+    }
+
     /**
      * Handle pimcore.security.encoder_factories mapping
      *
@@ -273,6 +310,22 @@ class PimcoreCoreExtension extends Extension implements PrependExtensionInterfac
         $definition->replaceArgument(1, $factoryMapping);
     }
 
+    private function configureMigrations(ContainerBuilder $container, array $config)
+    {
+        $configurations = [];
+        foreach ($config['sets'] as $identifier => $set) {
+            $configurations[] = array_merge([
+                'identifier' => $identifier
+            ], $set);
+        }
+
+        $factory = $container->findDefinition(ConfigurationFactory::class);
+        $factory->setArgument(
+            '$migrationSetConfigurations',
+            $configurations
+        );
+    }
+
     /**
      * Add context specific routes to context guesser
      *
@@ -281,7 +334,7 @@ class PimcoreCoreExtension extends Extension implements PrependExtensionInterfac
      */
     private function addContextRoutes(ContainerBuilder $container, array $config)
     {
-        $guesser = $container->getDefinition('pimcore.service.context.pimcore_context_guesser');
+        $guesser = $container->getDefinition(PimcoreContextGuesser::class);
 
         foreach ($config as $context => $contextConfig) {
             $guesser->addMethodCall('addContextRoutes', [$context, $contextConfig['routes']]);
@@ -357,5 +410,25 @@ class PimcoreCoreExtension extends Extension implements PrependExtensionInterfac
 
         $property->setValue($container, $extensionConfigs);
         $property->setAccessible(false);
+    }
+
+    /**
+     * Configure Adapter Factories
+     *
+     * @param ContainerBuilder $container
+     * @param $factories
+     * @param $serviceLocatorId
+     * @param $type
+     */
+    private function configureAdapterFactories(ContainerBuilder $container, $factories, $serviceLocatorId, $type)
+    {
+        $serviceLocator = $container->getDefinition($serviceLocatorId);
+        $arguments = [];
+
+        foreach ($factories as $key => $serviceId) {
+            $arguments[$key] = new Reference($serviceId);
+        }
+
+        $serviceLocator->setArgument(0, $arguments);
     }
 }

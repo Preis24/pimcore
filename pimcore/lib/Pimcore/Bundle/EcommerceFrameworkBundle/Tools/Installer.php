@@ -16,13 +16,12 @@ namespace Pimcore\Bundle\EcommerceFrameworkBundle\Tools;
 
 use Pimcore\Config;
 use Pimcore\Extension\Bundle\Installer\AbstractInstaller;
-use Pimcore\Model\Object\ClassDefinition;
-use Pimcore\Model\Object\ClassDefinition\Service;
-use Pimcore\Model\Object\Fieldcollection;
-use Pimcore\Model\Object\Objectbrick;
+use Pimcore\Model\DataObject\ClassDefinition;
+use Pimcore\Model\DataObject\ClassDefinition\Service;
+use Pimcore\Model\DataObject\Fieldcollection;
+use Pimcore\Model\DataObject\Objectbrick;
 use Pimcore\Model\Translation\Admin;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
 
 class Installer extends AbstractInstaller
@@ -36,6 +35,11 @@ class Installer extends AbstractInstaller
      * @var string
      */
     private $installSourcesPath;
+
+    /**
+     * @var bool
+     */
+    private $installed;
 
     /**
      * @var array - contains all tables that need to be created
@@ -135,6 +139,8 @@ class Installer extends AbstractInstaller
      */
     public function __construct(LoggerInterface $logger)
     {
+        parent::__construct();
+
         $this->logger             = $logger;
         $this->installSourcesPath = __DIR__ . '/../Resources/install';
     }
@@ -148,8 +154,6 @@ class Installer extends AbstractInstaller
     {
         $this->checkCanBeInstalled();
 
-        $this->copyConfigFile();
-
         $this->createFieldCollections();
         $this->createClasses();
         $this->createObjectBricks();
@@ -159,6 +163,9 @@ class Installer extends AbstractInstaller
         $this->importTranslations();
 
         $this->addPermissions();
+
+        // reset installed state
+        $this->installed = null;
 
         return true;
     }
@@ -424,23 +431,6 @@ class Installer extends AbstractInstaller
     }
 
     /**
-     * copy sample config file - if not exists.
-     */
-    private function copyConfigFile()
-    {
-        $target = PIMCORE_CUSTOM_CONFIGURATION_DIRECTORY . '/EcommerceFrameworkConfig.php';
-        $fs     = new Filesystem();
-
-        // copy config file
-        if (!$fs->exists($target)) {
-            $fs->copy(
-                $this->installSourcesPath . '/EcommerceFrameworkConfig_sample.php',
-                $target
-            );
-        }
-    }
-
-    /**
      * imports admin-translations
      *
      * @throws \Exception
@@ -497,6 +487,9 @@ class Installer extends AbstractInstaller
         $key = 'bundle_ecommerce_back-office_order';
         $db->deleteWhere('users_permission_definitions', '`key` = ' . $db->quote($key));
 
+        // reset installed state
+        $this->installed = null;
+
         return true;
     }
 
@@ -516,6 +509,10 @@ class Installer extends AbstractInstaller
      */
     public function isInstalled()
     {
+        if (null !== $this->installed) {
+            return $this->installed;
+        }
+
         $result = null;
         try {
             if (Config::getSystemConfig()) {
@@ -525,6 +522,8 @@ class Installer extends AbstractInstaller
             $this->logger->error($e);
         }
 
-        return !empty($result);
+        $this->installed = !empty($result);
+
+        return $this->installed;
     }
 }

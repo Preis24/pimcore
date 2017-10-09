@@ -45,10 +45,10 @@ echo "move old pimcore directory"
 mv pimcore pimcore4
 
 echo "download latest pimcore build..."
-wget https://www.pimcore.org/download-5/pimcore-unstable.zip
+wget https://www.pimcore.org/download-5/pimcore-latest.zip
 
 echo "unzip latest pimcore build"
-unzip pimcore-unstable.zip
+unzip pimcore-latest.zip
 
 
 # create config directories
@@ -97,6 +97,5 @@ if [ -d "plugins" ]; then
     mv plugins legacy/plugins
 fi
 
-echo "Migration succeeded...running composer update now"
-composer require pimcore/pimcore4-compatibility-bridge
-composer update
+echo "Migration succeeded...you should run composer update now"
+

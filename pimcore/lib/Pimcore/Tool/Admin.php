@@ -14,6 +14,7 @@
 
 namespace Pimcore\Tool;
 
+use Pimcore\Bundle\AdminBundle\Security\User\TokenStorageUserResolver;
 use Pimcore\Event\SystemEvents;
 use Pimcore\File;
 use Pimcore\Model\User;
@@ -147,6 +148,10 @@ class Admin
     public static function activateMaintenanceMode($sessionId)
     {
         if (empty($sessionId)) {
+            $sessionId = Session::getSessionId();
+        }
+
+        if (empty($sessionId)) {
             throw new \Exception("It's not possible to activate the maintenance mode without a session-id");
         }
 
@@ -232,7 +237,7 @@ class Admin
     public static function getCurrentUser()
     {
         return \Pimcore::getContainer()
-            ->get('pimcore_admin.security.token_storage_user_resolver')
+            ->get(TokenStorageUserResolver::class)
             ->getUser();
     }
 

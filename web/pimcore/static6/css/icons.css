@@ -178,6 +178,11 @@
     background: url(/pimcore/static6/img/flat-color-icons/ok.svg) center center no-repeat !important;
 }
 
+
+.pimcore_icon_save_white {
+    background: url(/pimcore/static6/img/flat-color-icons/checkmark-white.svg) center center no-repeat !important;
+}
+
 .pimcore_icon_reload {
     background: url(/pimcore/static6/img/flat-color-icons/synchronize.svg) center center no-repeat !important;
 }
@@ -222,11 +227,9 @@
     background: url(/pimcore/static6/img/flat-color-icons/lock.svg) center center no-repeat !important;
 }
 
-.pimcore_icon_cursor {
+.pimcore_icon_open {
     background: url(/pimcore/static6/img/flat-color-icons/cursor.svg) center center no-repeat !important;
 }
-
-
 
 /* assets */
 
@@ -238,7 +241,7 @@
     background: url(/pimcore/static6/img/flat-color-icons/package.svg) center center no-repeat !important;
 }
 
-.pimcore_icon_jpeg, .pimcore_icon_jpg, .pimcore_icon_png, .pimcore_icon_gif, .pimcore_icon_tif, .pimcore_icon_psd, .pimcore_icon_eps, .pimcore_icon_ai, .pimcore_icon_svg, .pimcore_icon_svgz, .pimcore_icon_bmp, .pimcore_icon_pcx, .pimcore_icon_iff, .pimcore_icon_pct, .pimcore_icon_wmf, .pimcore_icon_svg, .pimcore_icon_eps {
+.pimcore_icon_jpeg, .pimcore_icon_jpg, .pimcore_icon_png, .pimcore_icon_gif, .pimcore_icon_tif, .pimcore_icon_psd, .pimcore_icon_psb, .pimcore_icon_eps, .pimcore_icon_ai, .pimcore_icon_svg, .pimcore_icon_svgz, .pimcore_icon_bmp, .pimcore_icon_pcx, .pimcore_icon_iff, .pimcore_icon_pct, .pimcore_icon_wmf, .pimcore_icon_svg {
     background: url(/pimcore/static6/img/flat-color-icons/image.svg) center center no-repeat !important;
 }
 
@@ -328,8 +331,8 @@
     background: url(/pimcore/static6/img/flat-color-icons/reading.svg) center center no-repeat !important;
 }
 
-.pimcore_icon_bugs {
-    background: url(/pimcore/static6/img/flat-color-icons/medium_priority.svg) center center no-repeat !important;
+.pimcore_icon_github {
+    background: url(/pimcore/static6/img/github.svg) center center no-repeat !important;
 }
 
 .pimcore_icon_about {
@@ -545,10 +548,6 @@
     background: url(/pimcore/static6/img/flat-color-icons/ok.svg) center center no-repeat !important;
 }
 
-.pimcore_icon_open {
-    background: url(/pimcore/static6/img/flat-color-icons/cursor.svg) center center no-repeat !important;
-}
-
 .pimcore_icon_accept {
     background: url(/pimcore/static6/img/flat-color-icons/ok.svg) center center no-repeat !important;
 }
@@ -606,7 +605,7 @@
 }
 
 .pimcore_icon_maintenance {
-    background: url(/pimcore/static6/img/flat-color-icons/automotive.svg) center center no-repeat !important;
+    background: url(/pimcore/static6/img/flat-color-icons/stop-circle.svg) center center no-repeat !important;
 }
 
 .pimcore_icon_info {
@@ -768,6 +767,10 @@
 
 .pimcore_icon_quantityValue {
     background: url(/pimcore/static6/img/flat-color-icons/currency_exchange.svg) center center no-repeat !important;
+}
+
+.pimcore_icon_inputQuantityValue {
+    background: url(/pimcore/static6/img/flat-color-icons/add_row.svg) center center no-repeat !important;
 }
 
 .pimcore_icon_calculatedValue {

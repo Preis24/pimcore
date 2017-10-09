@@ -356,26 +356,6 @@ class Tool
     }
 
     /**
-     * @param Request|null $request
-     *
-     * @return bool
-     */
-    public static function isInstaller(Request $request = null)
-    {
-        $request = self::resolveRequest($request);
-
-        if (null === $request) {
-            return false;
-        }
-
-        if (preg_match('@^/install@', $request->getRequestUri())) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
      * eg. editmode, preview, version preview, always when it is a "frontend-request", but called out of the admin
      *
      * @param Request|null $request
@@ -469,7 +449,7 @@ class Tool
         $request = self::resolveRequest($request);
 
         if (null === $request) {
-            return '';
+            return 'http';
         }
 
         return $request->getScheme();
@@ -680,9 +660,7 @@ class Tool
             $realCacheDir = PIMCORE_PRIVATE_VAR . '/cache';
         }
 
-        // the old cache dir name must not be longer than the real one to avoid exceeding
-        // the maximum length of a directory or file path within it (esp. Windows MAX_PATH)
-        $oldCacheDir = substr($realCacheDir, 0, -1).('~' === substr($realCacheDir, -1) ? '+' : '~');
+        $oldCacheDir = self::getSymfonyCacheDirRemoveTempLocation($realCacheDir);
         $filesystem = $container->get('filesystem');
         if ($filesystem->exists($oldCacheDir)) {
             $filesystem->remove($oldCacheDir);
@@ -694,6 +672,13 @@ class Tool
 
         $filesystem->rename($realCacheDir, $oldCacheDir);
         $filesystem->remove($oldCacheDir);
+    }
+
+    public static function getSymfonyCacheDirRemoveTempLocation(string $realCacheDir): string
+    {
+        // the temp cache dir name must not be longer than the real one to avoid exceeding
+        // the maximum length of a directory or file path within it (esp. Windows MAX_PATH)
+        return substr($realCacheDir, 0, -1) . ('~' === substr($realCacheDir, -1) ? '+' : '~');
     }
 
     /**

@@ -14,6 +14,7 @@
 
 namespace Pimcore\Bundle\AdminBundle\Controller\Admin;
 
+use Pimcore\Document\Newsletter\AddressSourceAdapterFactoryInterface;
 use Pimcore\Event\AdminEvents;
 use Pimcore\Logger;
 use Pimcore\Model\Document;
@@ -174,7 +175,7 @@ class NewsletterController extends DocumentControllerBase
         $count = 0;
         $success = false;
         try {
-            $className = '\\Pimcore\\Model\\Object\\' . ucfirst($request->get('class')) . '\\Listing';
+            $className = '\\Pimcore\\Model\\DataObject\\' . ucfirst($request->get('class')) . '\\Listing';
             $list = new $className();
 
             $conditions = ['(newsletterActive = 1 AND newsletterConfirmed = 1)'];
@@ -203,15 +204,15 @@ class NewsletterController extends DocumentControllerBase
      */
     public function getAvailableClassesAction(Request $request)
     {
-        $classList = new \Pimcore\Model\Object\ClassDefinition\Listing();
+        $classList = new \Pimcore\Model\DataObject\ClassDefinition\Listing();
 
         $availableClasses = [];
         foreach ($classList->load() as $class) {
             $fieldCount = 0;
             foreach ($class->getFieldDefinitions() as $fd) {
-                if ($fd instanceof \Pimcore\Model\Object\ClassDefinition\Data\NewsletterActive ||
-                    $fd instanceof \Pimcore\Model\Object\ClassDefinition\Data\NewsletterConfirmed ||
-                    $fd instanceof \Pimcore\Model\Object\ClassDefinition\Data\Email) {
+                if ($fd instanceof \Pimcore\Model\DataObject\ClassDefinition\Data\NewsletterActive ||
+                    $fd instanceof \Pimcore\Model\DataObject\ClassDefinition\Data\NewsletterConfirmed ||
+                    $fd instanceof \Pimcore\Model\DataObject\ClassDefinition\Data\Email) {
                     $fieldCount++;
                 }
             }
@@ -338,12 +339,17 @@ class NewsletterController extends DocumentControllerBase
         $addressSourceAdapterName = $request->get('addressAdapterName');
         $adapterParams = json_decode($request->get('adapterParams'), true);
 
-        $adapterClass = '\\Pimcore\\Document\\Newsletter\\AddressSourceAdapter\\' . ucfirst($addressSourceAdapterName);
+        $serviceLocator = $this->get('pimcore.newsletter.address_source_adapter.factories');
+
+        if (!$serviceLocator->has($addressSourceAdapterName)) {
+            return $this->json(['success' => false, 'error' => sprintf('Cannot send newsletters because Address Source Adapter with identifier %s could not be found', $addressSourceAdapterName)]);
+        }
 
         /**
-         * @var $addressAdapter \Pimcore\Document\Newsletter\AddressSourceAdapterInterface
+         * @var $addressAdapterFactory AddressSourceAdapterFactoryInterface
          */
-        $addressAdapter = new $adapterClass($adapterParams);
+        $addressAdapterFactory = $serviceLocator->get($addressSourceAdapterName);
+        $addressAdapter = $addressAdapterFactory->create($adapterParams);
 
         $sendingContainer = $addressAdapter->getParamsForTestSending($request->get('testMailAddress'));
 

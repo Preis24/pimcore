@@ -12,18 +12,33 @@
  * @license    http://www.pimcore.org/license     GPLv3 and PEL
  */
 use Pimcore\Config;
+use Pimcore\Model\DataObject;
 use Pimcore\Model\Document;
-use Pimcore\Model\Object;
 use Symfony\Component\Console\Input\ArgvInput;
+
+// ensure the cli arguments are set
+if (!isset($_SERVER['argv'])) {
+    $_SERVER['argv'] = [];
+}
+
+// although this was already defined in console, we re-check here as simple CLI scripts could
+// just include this file to get started
+if (!defined('PIMCORE_PROJECT_ROOT')) {
+    define(
+        'PIMCORE_PROJECT_ROOT',
+        getenv('PIMCORE_PROJECT_ROOT')
+            ?: getenv('REDIRECT_PIMCORE_PROJECT_ROOT')
+            ?: realpath(__DIR__ . '/../..')
+    );
+}
 
 // determines if we're in Pimcore\Console mode
 $pimcoreConsole = (defined('PIMCORE_CONSOLE') && true === PIMCORE_CONSOLE);
 
+require_once PIMCORE_PROJECT_ROOT . '/pimcore/config/bootstrap.php';
+
 $workingDirectory = getcwd();
 chdir(__DIR__);
-
-include_once __DIR__ . '/../config/constants.php';
-include_once __DIR__ . '/../config/autoload.php';
 
 if ($pimcoreConsole) {
     $input = new ArgvInput();
@@ -45,9 +60,9 @@ chdir($workingDirectory);
 //Activate Inheritance for cli-scripts
 \Pimcore::unsetAdminMode();
 Document::setHideUnpublished(true);
-Object\AbstractObject::setHideUnpublished(true);
-Object\AbstractObject::setGetInheritedValues(true);
-Object\Localizedfield::setGetFallbackValues(true);
+DataObject\AbstractObject::setHideUnpublished(true);
+DataObject\AbstractObject::setGetInheritedValues(true);
+DataObject\Localizedfield::setGetFallbackValues(true);
 
 // CLI has no memory/time limits
 @ini_set('memory_limit', -1);

@@ -14,16 +14,18 @@
 
 namespace Pimcore\Bundle\CoreBundle\EventListener\Frontend;
 
+use Pimcore\Bundle\CoreBundle\EventListener\Traits\PimcoreContextAwareTrait;
 use Pimcore\Bundle\CoreBundle\EventListener\Traits\ResponseInjectionTrait;
+use Pimcore\Http\Request\Resolver\DocumentResolver;
+use Pimcore\Http\Request\Resolver\PimcoreContextResolver;
 use Pimcore\Model;
 use Pimcore\Model\Document;
-use Pimcore\Service\Request\DocumentResolver;
-use Pimcore\Service\Request\PimcoreContextResolver;
 use Pimcore\Tool;
 use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
 
-class TargetingListener extends AbstractFrontendListener
+class TargetingListener
 {
+    use PimcoreContextAwareTrait;
     use ResponseInjectionTrait;
 
     /**
@@ -154,7 +156,7 @@ class TargetingListener extends AbstractFrontendListener
                     // check for persona specific variants of this page
                     $personaVariants = [];
                     foreach ($document->getElements() as $key => $tag) {
-                        if (preg_match('/^persona_-([0-9]+)-_/', $key, $matches)) {
+                        if (preg_match('/^' . Document\Page::PERSONA_ELEMENT_PREFIX_PREFIXPART . '([0-9]+)' . Document\Page::PERSONA_ELEMENT_PREFIX_SUFFIXPART . '/', $key, $matches)) {
                             $id = (int) $matches[1];
                             if (Model\Tool\Targeting\Persona::isIdActive($id)) {
                                 $personaVariants[] = $id;
@@ -204,7 +206,7 @@ class TargetingListener extends AbstractFrontendListener
                 $code = '';
                 // check if persona or target group requires geoip to be included
                 if ($this->checkPersonasAndTargetGroupForGeoIPRequirement($personas, $targets)) {
-                    $code .= '<script type="text/javascript" src="/pimcore/static6/js/frontend/geoip.js/"></script>';
+                    $code .= '<script type="text/javascript" src="/pimcore/static6/js/frontend/geoip.js/index.php"></script>';
                 }
 
                 $code .= '<script type="text/javascript">';

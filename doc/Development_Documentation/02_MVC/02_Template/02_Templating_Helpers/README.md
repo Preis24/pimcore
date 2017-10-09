@@ -52,13 +52,24 @@ All helpers are described below in detail, the following tables give just a shor
 
 
 You can also create your own custom templating helpers to make certain functionalities available to your views.  
-Here you can find an example how to [create](https://github.com/pimcore/pimcore/blob/master/install-profiles/demo-cms/src/AppBundle/Templating/Example.php) 
+Here you can find an example how to [create](https://github.com/pimcore/pimcore/blob/master/install-profiles/demo-basic/src/AppBundle/Templating/Helper/Example.php) 
 and [register](https://github.com/pimcore/pimcore/blob/master/app/config/services.yml) your own templating helper. 
 
 ### `$this->action()`
+
 This helper is a shorthand of Symfony's `actions` helper. 
 
-`$this->action(string $action, string $controller, string $bundle, array $params = [])`
+<div class="code-section">
+
+```php
+<?= $this->action($action, $controller, $bundle, $params = []) ?>
+```
+
+```twig
+{{ pimcore_action(action, controller, bundle, {}) }}
+```
+
+</div>
    
 | Name                | Description  |
 |---------------------|--------------|
@@ -69,11 +80,22 @@ This helper is a shorthand of Symfony's `actions` helper.
 
    
 ##### Example
+
+<div class="code-section">
+
 ```php
 <section id="foo-bar">
     <?= $this->action("foo", "Bar", null, ["awesome" => "value"]) ?>
 </section>
 ```
+
+```twig
+<section id="foo-bar">
+    {{ pimcore_action('foo', 'Bar', ~, { awesome: 'value' }) }}
+</section>
+```
+
+</div>
    
     
 ### `$this->cache()`
@@ -90,19 +112,46 @@ of calculation or require a huge amount of objects (like navigations, ...).
 | `$force`        | Force caching, even when request is done within Pimcore admin interface |
 
 ##### Example
+
+<div class="code-section">
+
 ```php
-<?php if(!$this->cache("test_cache_key", 60)->start()) { ?>
+<?php $cache = $this->cache("test_cache_key", 60); ?>
+<?php if (!$cache->start()): ?>
     <h1>This is some cached microtime</h1>
     <?= microtime() ?>
-    <?php $this->cache("test_cache_key")->end(); ?>
-<?php } ?>
+    <?php $cache->end(); ?>
+<?php endif ?>
 ```
 
+```twig
+{% set cache = pimcore_cache("test_cache_key", 60) %}
+{% if not cache.start() %}
+    <h1>This is some cached microtime</h1>
+    {{ 'now'|date('U') }}
+    {% do cache.end() %}
+{% endif %}
+```
+
+</div>
 
 ### `$this->device()`
+
 This helper makes it easy to implement "Adaptive Design" in Pimcore. 
 
-`$this->device([string $default = null])`
+<div class="code-section">
+
+```php
+<?= $this->device('a default value'); ?>
+```
+
+```twig
+{{ pimcore_device('a default value') }}
+```
+
+</div>
+
+
 
 | Name                | Description  |
 |---------------------|--------------|

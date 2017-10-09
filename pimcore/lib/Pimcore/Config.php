@@ -226,6 +226,24 @@ class Config
     }
 
     /**
+     * Returns whole website config or only a given setting for the current site
+     *
+     * @param null|mixed $key       Config key to directly load. If null, the whole config will be returned
+     * @param null|mixed $default   Default value to use if the key is not set
+     *
+     * @return Config\Config|mixed
+     */
+    public static function getWebsiteConfigValue($key = null, $default = null)
+    {
+        $config = self::getWebsiteConfig();
+        if (null !== $key) {
+            return $config->get($key, $default);
+        }
+
+        return $config;
+    }
+
+    /**
      * @static
      *
      * @return \Pimcore\Config\Config
@@ -687,11 +705,14 @@ class Config
     }
 
     /**
+     * @param bool $reset
+     * @param string|null $default
+     *
      * @return string
      */
-    public static function getEnvironment()
+    public static function getEnvironment(bool $reset = false, string $default = null)
     {
-        if (null === static::$environment) {
+        if (null === static::$environment || $reset) {
             $environment = false;
 
             // check env vars - fall back to default (prod)
@@ -718,10 +739,14 @@ class Config
             }
 
             if (!$environment) {
-                if (\Pimcore::inDebugMode()) {
-                    $environment = 'dev';
+                if (null !== $default) {
+                    $environment = $default;
                 } else {
-                    $environment = static::DEFAULT_ENVIRONMENT;
+                    if (\Pimcore::inDebugMode()) {
+                        $environment = 'dev';
+                    } else {
+                        $environment = static::DEFAULT_ENVIRONMENT;
+                    }
                 }
             }
 

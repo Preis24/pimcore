@@ -14,8 +14,9 @@
 pimcore.registerNS("pimcore.document.folder");
 pimcore.document.folder = Class.create(pimcore.document.document, {
 
-    initialize: function(id) {
+    initialize: function(id, options) {
 
+        this.options = options;
         this.id = intval(id);
         this.setType("folder");
         this.addLoadingPanel();
@@ -122,7 +123,8 @@ pimcore.document.folder = Class.create(pimcore.document.document, {
 
             this.toolbarButtons.publish = new Ext.Button({
                 text: t('save'),
-                iconCls: "pimcore_icon_publish",
+                iconCls: "pimcore_icon_save_white",
+                cls: "pimcore_save_button",
                 scale: "medium",
                 handler: this.save.bind(this)
             });

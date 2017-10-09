@@ -14,8 +14,8 @@
 
 namespace Pimcore\Templating\Helper;
 
+use Pimcore\Http\Request\Resolver\EditmodeResolver;
 use Pimcore\Model\Document\PageSnippet;
-use Pimcore\Service\Request\EditmodeResolver;
 use Pimcore\Templating\Renderer\IncludeRenderer;
 use Symfony\Component\Templating\Helper\Helper;
 
@@ -53,6 +53,7 @@ class Inc extends Helper
      * @param PageSnippet|int|string $include
      * @param array $params
      * @param bool $cacheEnabled
+     * @param bool|null $editmode
      *
      * @return string
      */

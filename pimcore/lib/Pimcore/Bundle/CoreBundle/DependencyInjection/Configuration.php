@@ -59,21 +59,41 @@ class Configuration implements ConfigurationInterface
                 ->end()
                 ->arrayNode('flags')
                     ->info('Generic map for feature flags, such as `zend_date`')
-                    ->prototype('scalar')
+                    ->prototype('scalar')->end()
+                ->end()
+                ->arrayNode('translations')
+                    ->addDefaultsIfNotSet()
+                    ->children()
+                        ->booleanNode('case_insensitive')
+                            ->info('Force pimcore translations to NOT be case sensitive. This only applies to translations set via Pimcore\'s translator (e.g. website translations)')
+                            ->defaultFalse()
+                        ->end()
+                        ->arrayNode('debugging')
+                            ->info('If debugging is enabled, the translator will return the plain translation key instead of the translated message.')
+                            ->addDefaultsIfNotSet()
+                            ->canBeEnabled()
+                            ->children()
+                                ->scalarNode('parameter')
+                                    ->defaultValue('pimcore_debug_translations')
+                                ->end()
+                            ->end()
+                        ->end()
                     ->end()
+                ->end()
             ->end();
 
         $this->addObjectsNode($rootNode);
         $this->addDocumentsNode($rootNode);
         $this->addModelsNode($rootNode);
-
         $this->addRoutingNode($rootNode);
         $this->addCacheNode($rootNode);
         $this->addContextNode($rootNode);
         $this->addAdminNode($rootNode);
         $this->addWebProfilerNode($rootNode);
-
         $this->addSecurityNode($rootNode);
+        $this->addNewsletterNode($rootNode);
+        $this->addCustomReportsNode($rootNode);
+        $this->addMigrationsNode($rootNode);
 
         return $treeBuilder;
     }
@@ -89,6 +109,7 @@ class Configuration implements ConfigurationInterface
                     ->addDefaultsIfNotSet()
                     ->children()
                         ->arrayNode('class_overrides')
+                            ->useAttributeAsKey('name')
                             ->prototype('scalar');
     }
 
@@ -351,10 +372,10 @@ class Configuration implements ConfigurationInterface
                         ->arrayNode('encoder_factories')
                             ->info('Encoder factories to use as className => factory service ID mapping')
                             ->example([
-                                'AppBundle\Model\Object\User1' => [
+                                'AppBundle\Model\DataObject\User1' => [
                                     'id' => 'website_demo.security.encoder_factory2'
                                 ],
-                                'AppBundle\Model\Object\User2' => 'website_demo.security.encoder_factory2'
+                                'AppBundle\Model\DataObject\User2' => 'website_demo.security.encoder_factory2'
                             ])
                             ->useAttributeAsKey('class')
                             ->prototype('array')
@@ -505,5 +526,115 @@ class Configuration implements ConfigurationInterface
                         ->end()
                     ->end()
                 ->end();
+    }
+
+    /**
+     * Adds configuration tree for newsletter source adapters
+     *
+     * @param ArrayNodeDefinition $rootNode
+     */
+    private function addNewsletterNode(ArrayNodeDefinition $rootNode)
+    {
+        $rootNode
+            ->children()
+                ->arrayNode('newsletter')
+                    ->addDefaultsIfNotSet()
+                    ->children()
+                        ->arrayNode('source_adapters')
+                            ->useAttributeAsKey('name')
+                                ->prototype('scalar')
+                            ->end()
+                        ->end()
+                    ->end()
+                ->end()
+            ->end();
+    }
+
+    /**
+     * Adds configuration tree for custom report adapters
+     *
+     * @param ArrayNodeDefinition $rootNode
+     */
+    private function addCustomReportsNode(ArrayNodeDefinition $rootNode)
+    {
+        $rootNode
+            ->children()
+                ->arrayNode('custom_report')
+                    ->addDefaultsIfNotSet()
+                    ->children()
+                        ->arrayNode('adapters')
+                            ->useAttributeAsKey('name')
+                                ->prototype('scalar')
+                            ->end()
+                        ->end()
+                    ->end()
+                ->end()
+            ->end();
+    }
+
+    /**
+     * Adds configuration tree node for migrations
+     *
+     * @param ArrayNodeDefinition $rootNode
+     */
+    private function addMigrationsNode(ArrayNodeDefinition $rootNode)
+    {
+        $rootNode
+            ->children()
+                ->arrayNode('migrations')
+                    ->addDefaultsIfNotSet()
+                    ->children()
+                        ->arrayNode('sets')
+                            ->useAttributeAsKey('identifier')
+                            ->defaultValue([])
+                            ->info('Migration sets which can be used apart from bundle migrations. Use the -s option in migration commands to select a specific set.')
+                            ->example([
+                                [
+                                    'custom_set' => [
+                                        'name'       => 'Custom Migrations',
+                                        'namespace'  => 'App\\Migrations\\Custom',
+                                        'directory'  => 'src/App/Migrations/Custom'
+                                    ],
+                                    'custom_set_2' => [
+                                        'name'       => 'Custom Migrations 2',
+                                        'namespace'  => 'App\\Migrations\\Custom2',
+                                        'directory'  => 'src/App/Migrations/Custom2',
+                                        'connection' => 'custom_connection'
+                                    ],
+                                ]
+                            ])
+                            ->prototype('array')
+                                ->children()
+                                    ->scalarNode('identifier')->end()
+                                    ->scalarNode('name')
+                                        ->isRequired()
+                                        ->cannotBeEmpty()
+                                    ->end()
+                                    ->scalarNode('namespace')
+                                        ->isRequired()
+                                        ->cannotBeEmpty()
+                                    ->end()
+                                    ->scalarNode('directory')
+                                        ->isRequired()
+                                        ->cannotBeEmpty()
+                                    ->end()
+                                    ->scalarNode('connection')
+                                        ->info('If defined, the DBAL connection defined here will be used')
+                                        ->defaultNull()
+                                        ->beforeNormalization()
+                                            ->ifTrue(function ($v) {
+                                                return empty(trim($v));
+                                            })
+                                            ->then(function () {
+                                                return null;
+                                            })
+                                        ->end()
+                                    ->end()
+                                ->end()
+                            ->end()
+                        ->end()
+                    ->end()
+                ->end()
+            ->end();
     }
 }

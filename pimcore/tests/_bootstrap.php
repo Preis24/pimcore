@@ -2,9 +2,18 @@
 
 use Pimcore\Tests\Util\Autoloader;
 
-require_once __DIR__ . '/../../vendor/autoload.php';
+if (!defined('PIMCORE_PROJECT_ROOT')) {
+    define(
+        'PIMCORE_PROJECT_ROOT',
+        getenv('PIMCORE_PROJECT_ROOT')
+            ?: getenv('REDIRECT_PIMCORE_PROJECT_ROOT')
+            ?: realpath(__DIR__ . '/../..')
+    );
+}
 
-Autoloader::addNamespace('Pimcore\Model\Object', __DIR__ . '/_output/var/classes/Object');
+require_once PIMCORE_PROJECT_ROOT . '/vendor/autoload.php';
+
+Autoloader::addNamespace('Pimcore\Model\DataObject', __DIR__ . '/_output/var/classes/DataObject');
 Autoloader::addNamespace('Pimcore\Tests\Cache', __DIR__ . '/cache');
 Autoloader::addNamespace('Pimcore\Tests\Ecommerce', __DIR__ . '/ecommerce');
 Autoloader::addNamespace('Pimcore\Tests\Model', __DIR__ . '/model');

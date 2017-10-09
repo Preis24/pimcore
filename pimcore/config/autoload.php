@@ -14,12 +14,21 @@
 use Doctrine\Common\Annotations\AnnotationReader;
 use Doctrine\Common\Annotations\AnnotationRegistry;
 
-/** @var $loader \Composer\Autoload\ClassLoader */
-$loader = require PIMCORE_COMPOSER_PATH . '/autoload.php';
+$loader = Pimcore::getAutoloader();
 
 // tell the autoloader where to find Pimcore's generated class stubs
 // this is primarily necessary for tests and custom class directories, which are not covered in composer.json
-$loader->addPsr4('Pimcore\\Model\\Object\\', PIMCORE_CLASS_DIRECTORY . '/Object');
+$loader->addPsr4('Pimcore\\Model\\DataObject\\', PIMCORE_CLASS_DIRECTORY . '/DataObject');
+
+if (version_compare(PHP_VERSION, '7.2.0', '<')) {
+    // for PHP versions < 7.2 we can use the compatibility autoloader for the \Pimcore\Model\Object\* namespace
+    $dataObjectCompatibilityLoader = new \Pimcore\Loader\Autoloader\DataObjectCompatibility($loader);
+    $dataObjectCompatibilityLoader->register(true);
+}
+
+// legacy mapping loader creates aliases for renamed classes
+$legacyMappingLoader = new \Pimcore\Loader\Autoloader\AliasMapper($loader);
+$legacyMappingLoader->createAliases();
 
 // the following code is out of `app/autoload.php`
 // see also: https://github.com/symfony/symfony-demo/blob/master/app/autoload.php
@@ -49,9 +58,5 @@ if (defined('PIMCORE_APP_BUNDLE_CLASS_FILE')) {
 if (!class_exists('Zend_Date')) {
     // if ZF is not loaded, we need to provide some compatibility stubs
     // for a detailed description see the included file
-    require_once PIMCORE_PATH . '/lib/compatibility-stubs.php';
+    require_once PIMCORE_PATH . '/stubs/compatibility-v4.php';
 }
-
-\Pimcore::setAutoloader($loader);
-
-return $loader;

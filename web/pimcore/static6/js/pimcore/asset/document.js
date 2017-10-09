@@ -88,16 +88,16 @@ pimcore.asset.document = Class.create(pimcore.asset.asset, {
         if (!this.editPanel) {
             var frameUrl = '/admin/asset/get-preview-document?id=' + this.id;
 
-            //check for native/plugin PDF viewer
+            // Check for native/plugin PDF viewer
             if(this.hasNativePDFViewer()) {
-                frameUrl += "?native-viewer=true"
+                frameUrl += "&native-viewer=true"
             }
 
             this.editPanel = new Ext.Panel({
                 title: t("preview"),
                 bodyCls: "pimcore_overflow_scrolling",
                 html: '<iframe src="' + frameUrl + '" frameborder="0" style="width: 100%;" id="asset_document_edit_' + this.id + '"></iframe>',
-                iconCls: "pimcore_icon_edit"
+                iconCls: "pimcore_icon_preview"
             });
             this.editPanel.on("resize", function (el, width, height, rWidth, rHeight) {
                 Ext.get("asset_document_edit_" + this.id).setStyle({

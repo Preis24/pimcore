@@ -111,7 +111,14 @@ pimcore.settings.tagmanagement.item = Class.create({
                 fieldLabel: t("description"),
                 width: 450,
                 height: 50
-            },{
+            },
+                {
+                    xtype: "checkbox",
+                    fieldLabel: t("temporarily_disabled"),
+                    name: "disabled",
+                    checked: this.data.disabled
+                },
+                {
                 xtype: "fieldset",
                 title: t("conditions"),
                 items: [{
@@ -244,6 +251,16 @@ pimcore.settings.tagmanagement.item = Class.create({
                 mode: "local",
                 value: data.position,
                 width: 250
+            },{
+                xtype: "checkbox",
+                fieldLabel: t("temporarily_disabled"),
+                name: "item." + myId + ".disabled",
+                checked: data.disabled
+            },{
+                xtype: "checkbox",
+                fieldLabel: t("enabled_in_editmode"),
+                name: "item." + myId + ".enabledInEditmode",
+                checked: data.enabledInEditmode
             }]
         });
 

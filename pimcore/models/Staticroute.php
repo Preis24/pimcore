@@ -194,7 +194,7 @@ class Staticroute extends AbstractModel
             return null;
         }
 
-        // to have a singleton in a way. like all instances of Element\ElementInterface do also, like Object\AbstractObject
+        // to have a singleton in a way. like all instances of Element\ElementInterface do also, like DataObject\AbstractObject
         if ($route->getId() > 0) {
             // add it to the mini-per request cache
             self::$nameIdMappingCache[$cacheKey] = $route->getId();
@@ -526,7 +526,7 @@ class Staticroute extends AbstractModel
 
             // merge route params from static routes here
             $request = \Pimcore::getContainer()->get('request_stack')->getCurrentRequest();
-            if ($request->attributes->get('_route_params')) {
+            if (null !== $request && $request->attributes->get('_route_params')) {
                 $requestParameters = array_merge($requestParameters, $request->attributes->get('_route_params'));
             }
 

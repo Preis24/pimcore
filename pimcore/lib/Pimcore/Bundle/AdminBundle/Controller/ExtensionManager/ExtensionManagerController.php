@@ -14,6 +14,7 @@
 
 namespace Pimcore\Bundle\AdminBundle\Controller\ExtensionManager;
 
+use ForceUTF8\Encoding;
 use Pimcore\Bundle\AdminBundle\Controller\AdminController;
 use Pimcore\Bundle\AdminBundle\HttpFoundation\JsonResponse;
 use Pimcore\Bundle\LegacyBundle\Controller\Admin\ExtensionManager\LegacyExtensionManagerController;
@@ -23,10 +24,12 @@ use Pimcore\Extension\Bundle\PimcoreBundleInterface;
 use Pimcore\Extension\Bundle\PimcoreBundleManager;
 use Pimcore\Extension\Document\Areabrick\AreabrickInterface;
 use Pimcore\Extension\Document\Areabrick\AreabrickManager;
+use Pimcore\Extension\Document\Areabrick\AreabrickManagerInterface;
 use Pimcore\Routing\RouteReferenceInterface;
+use Pimcore\Tool\AssetsInstaller;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
-use Symfony\Component\DependencyInjection\ContainerInterface;
+use SensioLabs\AnsiConverter\AnsiToHtmlConverter;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\FilterControllerEvent;
 use Symfony\Component\HttpKernel\Event\FilterResponseEvent;
@@ -42,22 +45,19 @@ class ExtensionManagerController extends AdminController implements EventedContr
     /**
      * @var PimcoreBundleManager
      */
-    protected $bundleManager;
+    private $bundleManager;
 
     /**
      * @var AreabrickManager
      */
-    protected $areabrickManager;
+    private $areabrickManager;
 
-    /**
-     * @inheritDoc
-     */
-    public function setContainer(ContainerInterface $container = null)
-    {
-        parent::setContainer($container);
-
-        $this->bundleManager    = $this->get('pimcore.extension.bundle_manager');
-        $this->areabrickManager = $this->get('pimcore.area.brick_manager');
+    public function __construct(
+        PimcoreBundleManager $bundleManager,
+        AreabrickManagerInterface $areabrickManager
+    ) {
+        $this->bundleManager    = $bundleManager;
+        $this->areabrickManager = $areabrickManager;
     }
 
     /**
@@ -151,10 +151,11 @@ class ExtensionManagerController extends AdminController implements EventedContr
      * @Route("/admin/toggle-extension-state")
      *
      * @param Request $request
+     * @param AssetsInstaller $assetsInstaller
      *
      * @return JsonResponse
      */
-    public function toggleExtensionStateAction(Request $request)
+    public function toggleExtensionStateAction(Request $request, AssetsInstaller $assetsInstaller)
     {
         if (null !== $response = $this->handleLegacyRequest($request, __FUNCTION__)) {
             return $response;
@@ -172,7 +173,7 @@ class ExtensionManagerController extends AdminController implements EventedContr
             $reload = true;
 
             if ($enable) {
-                $message = $this->installAssets();
+                $message = $this->installAssets($assetsInstaller);
             }
         } elseif ($type === 'areabrick') {
             $this->areabrickManager->setState($id, $enable);
@@ -194,12 +195,12 @@ class ExtensionManagerController extends AdminController implements EventedContr
     /**
      * Runs array:install command and returns its result as array (line-by-line)
      *
+     * @param AssetsInstaller $assetsInstaller
+     *
      * @return array
      */
-    private function installAssets(): array
+    private function installAssets(AssetsInstaller $assetsInstaller): array
     {
-        $assetsInstaller = $this->get('pimcore.tool.assets_installer');
-
         try {
             $installProcess = $assetsInstaller->install();
 
@@ -208,6 +209,8 @@ class ExtensionManagerController extends AdminController implements EventedContr
             $message = 'Failed to run assets:install command. Please run command manually.' . PHP_EOL . PHP_EOL . $e->getMessage();
         }
 
+        $message = Encoding::fixUTF8($message);
+        $message = (new AnsiToHtmlConverter())->convert($message);
         $message = explode(PHP_EOL, $message);
 
         return $message;
@@ -259,10 +262,16 @@ class ExtensionManagerController extends AdminController implements EventedContr
 
             $this->bundleManager->update($bundle);
 
-            return $this->json([
+            $data = [
                 'success' => true,
                 'bundle'  => $this->buildBundleInfo($bundle, true, true)
-            ]);
+            ];
+
+            if (!empty($message = $this->getInstallerOutput($bundle))) {
+                $data['message'] = $message;
+            }
+
+            return $this->json($data);
         } catch (BundleNotFoundException $e) {
             return $this->json([
                 'success' => false,
@@ -331,10 +340,16 @@ class ExtensionManagerController extends AdminController implements EventedContr
                 $this->bundleManager->uninstall($bundle);
             }
 
-            return $this->json([
+            $data = [
                 'success' => true,
                 'reload'  => $this->bundleManager->needsReloadAfterInstall($bundle)
-            ]);
+            ];
+
+            if (!empty($message = $this->getInstallerOutput($bundle))) {
+                $data['message'] = $message;
+            }
+
+            return $this->json($data);
         } catch (BundleNotFoundException $e) {
             return $this->json([
                 'success' => false,
@@ -447,19 +462,19 @@ class ExtensionManagerController extends AdminController implements EventedContr
         $state = $bm->getState($bundle);
 
         $info = [
-            'id'            => $bm->getBundleIdentifier($bundle),
-            'type'          => 'bundle',
-            'name'          => !empty($bundle->getNiceName()) ? $bundle->getNiceName() : $bundle->getName(),
-            'description'   => $bundle->getDescription(),
-            'active'        => $enabled,
-            'installable'   => false,
-            'uninstallable' => false,
-            'updateable'    => false,
-            'installed'     => $installed,
-            'configuration' => $this->getIframePath($bundle),
-            'version'       => $bundle->getVersion(),
-            'priority'      => $state['priority'],
-            'environments'  => implode(', ', $state['environments'])
+            'id'             => $bm->getBundleIdentifier($bundle),
+            'type'           => 'bundle',
+            'name'           => !empty($bundle->getNiceName()) ? $bundle->getNiceName() : $bundle->getName(),
+            'active'         => $enabled,
+            'installable'    => false,
+            'uninstallable'  => false,
+            'updateable'     => false,
+            'installed'      => $installed,
+            'canChangeState' => $bm->canChangeState($bundle),
+            'configuration'  => $this->getIframePath($bundle),
+            'version'        => $bundle->getVersion(),
+            'priority'       => $state['priority'],
+            'environments'   => implode(', ', $state['environments'])
         ];
 
         // only check for installation specifics if the bundle is enabled
@@ -470,6 +485,18 @@ class ExtensionManagerController extends AdminController implements EventedContr
                 'updateable'    => $bm->canBeUpdated($bundle),
             ]);
         }
+
+        // get description as last item as it may contain installer output
+        $description = $bundle->getDescription();
+        if (!empty($installerOutput = $this->getInstallerOutput($bundle))) {
+            if (!empty($description)) {
+                $description = $description . '. ';
+            }
+
+            $description .= $installerOutput;
+        }
+
+        $info['description'] = $description;
 
         return $info;
     }
@@ -501,10 +528,8 @@ class ExtensionManagerController extends AdminController implements EventedContr
      */
     private function getBrickList()
     {
-        $am = $this->get('pimcore.area.brick_manager');
-
         $results = [];
-        foreach ($am->getBricks() as $brick) {
+        foreach ($this->areabrickManager->getBricks() as $brick) {
             $results[] = $this->buildBrickInfo($brick);
         }
 
@@ -530,5 +555,29 @@ class ExtensionManagerController extends AdminController implements EventedContr
             'active'        => $this->areabrickManager->isEnabled($brick->getId()),
             'version'       => $brick->getVersion()
         ];
+    }
+
+    private function getInstallerOutput(PimcoreBundleInterface $bundle, bool $decorated = false)
+    {
+        if (!$this->bundleManager->isEnabled($bundle)) {
+            return null;
+        }
+
+        $installer = $this->bundleManager->getInstaller($bundle);
+        if (null !== $installer) {
+            $output = $installer->getOutputWriter()->getOutput();
+            if (!empty($output)) {
+                $converter = new AnsiToHtmlConverter(null);
+
+                $converted = Encoding::fixUTF8($output);
+                $converted = $converter->convert($converted);
+
+                if (!$decorated) {
+                    $converted = strip_tags($converted);
+                }
+
+                return $converted;
+            }
+        }
     }
 }

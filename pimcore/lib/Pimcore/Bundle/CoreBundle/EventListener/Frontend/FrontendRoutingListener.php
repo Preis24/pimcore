@@ -14,12 +14,13 @@
 
 namespace Pimcore\Bundle\CoreBundle\EventListener\Frontend;
 
+use Pimcore\Bundle\CoreBundle\EventListener\Traits\PimcoreContextAwareTrait;
 use Pimcore\Config;
+use Pimcore\Http\Request\Resolver\PimcoreContextResolver;
+use Pimcore\Http\Request\Resolver\SiteResolver;
 use Pimcore\Http\RequestHelper;
 use Pimcore\Model\Site;
 use Pimcore\Routing\RedirectHandler;
-use Pimcore\Service\Request\PimcoreContextResolver;
-use Pimcore\Service\Request\SiteResolver;
 use Pimcore\Tool;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -32,9 +33,13 @@ use Symfony\Component\HttpKernel\KernelEvents;
 
 /**
  * Runs before dynamic routing kicks in and resolves site + handles redirects
+ *
+ * TODO as this also handles the admin domain, a name without "Frontend" would be more suitable
  */
-class FrontendRoutingListener extends AbstractFrontendListener implements EventSubscriberInterface
+class FrontendRoutingListener implements EventSubscriberInterface
 {
+    use PimcoreContextAwareTrait;
+
     /**
      * @var RequestHelper
      */
@@ -81,7 +86,19 @@ class FrontendRoutingListener extends AbstractFrontendListener implements EventS
 
     public function onKernelRequest(GetResponseEvent $event)
     {
+        if (!$event->isMasterRequest()) {
+            return;
+        }
+
         $request = $event->getRequest();
+
+        // handle main domain redirect in admin context
+        if ($this->matchesPimcoreContext($request, PimcoreContextResolver::CONTEXT_ADMIN)) {
+            $this->handleMainDomainRedirect($event, true);
+
+            return;
+        }
+
         if (!$this->matchesPimcoreContext($request, PimcoreContextResolver::CONTEXT_DEFAULT)) {
             return;
         }
@@ -179,29 +196,31 @@ class FrontendRoutingListener extends AbstractFrontendListener implements EventS
      * Redirect to the main domain if specified
      *
      * @param GetResponseEvent $event
+     * @param bool $adminContext
      */
-    protected function handleMainDomainRedirect(GetResponseEvent $event)
+    protected function handleMainDomainRedirect(GetResponseEvent $event, bool $adminContext = false)
     {
         $request = $event->getRequest();
         $config  = Config::getSystemConfig();
 
         $hostRedirect = null;
 
-        if (Site::isSiteRequest()) {
-            $site = Site::getCurrentSite();
-            if ($site->getRedirectToMainDomain() && $site->getMainDomain() != $request->getHost()) {
-                $hostRedirect = $site->getMainDomain();
-            }
+        if ($adminContext) {
+            $hostRedirect = $this->resolveConfigDomainRedirectHost($config, $request);
         } else {
-            $gc = $config->general;
-            if ($gc->redirect_to_maindomain && $gc->domain && !$this->requestHelper->isFrontendRequestByAdmin()) {
-                if ($config->general->domain != $request->getHost()) {
-                    $hostRedirect = $config->general->domain;
+            if (Site::isSiteRequest()) {
+                $site = Site::getCurrentSite();
+                if ($site->getRedirectToMainDomain() && $site->getMainDomain() != $request->getHost()) {
+                    $hostRedirect = $site->getMainDomain();
+                }
+            } else {
+                if (!$this->requestHelper->isFrontendRequestByAdmin()) {
+                    $hostRedirect = $this->resolveConfigDomainRedirectHost($config, $request);
                 }
             }
         }
 
-        if ($hostRedirect && $request->request->has('pimcore_disable_host_redirect')) {
+        if ($hostRedirect && !$request->query->has('pimcore_disable_host_redirect')) {
             $qs = '';
             if (null !== $qs = $request->getQueryString()) {
                 $qs = '?' . $qs;
@@ -215,5 +234,17 @@ class FrontendRoutingListener extends AbstractFrontendListener implements EventS
 
             $event->setResponse(new RedirectResponse($url, Response::HTTP_MOVED_PERMANENTLY));
         }
+    }
+
+    private function resolveConfigDomainRedirectHost(Config\Config $config, Request $request)
+    {
+        $hostRedirect = null;
+
+        $gc = $config->general;
+        if ($gc->redirect_to_maindomain && $gc->domain && $gc->domain !== $request->getHost()) {
+            $hostRedirect = $config->general->domain;
+        }
+
+        return $hostRedirect;
     }
 }

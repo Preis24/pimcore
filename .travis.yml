@@ -8,6 +8,7 @@ language: php
 php:
   - 7
   - 7.1
+  - 7.2
 
 services:
   - redis
@@ -23,12 +24,26 @@ matrix:
       sudo: required
       php: 7
       env:
-          - PIMCORE_TEST_SUITE=rest PIMCORE_TEST_ENV=http
+          - PIMCORE_TEST_SUITE=rest
+          - PIMCORE_TEST_ENV=http
     - os: linux
       sudo: required
       php: 7.1
       env:
-          - PIMCORE_TEST_SUITE=rest PIMCORE_TEST_ENV=http
+          - PIMCORE_TEST_SUITE=rest
+          - PIMCORE_TEST_ENV=http
+    - os: linux
+      sudo: required
+      php: 7.2
+      env:
+          - PIMCORE_TEST_SUITE=rest
+          - PIMCORE_TEST_ENV=http
+    - os: linux
+      php: 7.1
+      env:
+          - PIMCORE_TEST_SUITE=cache
+          - PIMCORE_TEST_GROUP=cache.core.redis
+          - PIMCORE_TEST_SETUP_SKIP_PHP_REDIS_EXTENSION=true
 
 cache:
   directories:
@@ -44,7 +59,7 @@ env:
 
 before_install:
   - mysql --version
-  - mysql -e "CREATE DATABASE pimcore_test;"
+  - mysql -e "CREATE DATABASE pimcore_test CHARSET=utf8mb4;"
 
 install:
   # add config templates
@@ -56,7 +71,7 @@ install:
 
 before_script:
   - .travis/setup-php.sh
-  - if [[ "$TRAVIS_SUDO" == "true" ]]; then .travis/setup-sudo.sh; fi
+  - .travis/setup-functional-tests.sh
 
 script:
   - .travis/run-tests.sh

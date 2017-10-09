@@ -19,7 +19,6 @@ use Pimcore\Bundle\AdminBundle\HttpFoundation\JsonResponse;
 use Pimcore\Http\Exception\ResponseException;
 use Pimcore\Model\Webservice\Service;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -37,14 +36,9 @@ abstract class AbstractRestController extends AdminController
      */
     protected $service;
 
-    /**
-     * @inheritDoc
-     */
-    public function setContainer(ContainerInterface $container = null)
+    public function __construct(Service $service)
     {
-        parent::setContainer($container);
-
-        $this->service = $container->get('pimcore_admin.webservice.service');
+        $this->service = $service;
     }
 
     /**

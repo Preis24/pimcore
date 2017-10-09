@@ -56,6 +56,13 @@ pimcore.object.classes.data.quantityValue = Class.create(pimcore.object.classes.
             },
             {
                 xtype: "numberfield",
+                fieldLabel: t("decimal_precision"),
+                name: "decimalPrecision",
+                maxValue: 65,
+                value: this.datax.decimalPrecision
+            },
+            {
+                xtype: "numberfield",
                 fieldLabel: t("default_value"),
                 name: "defaultValue",
                 value: this.datax.defaultValue
@@ -90,5 +97,22 @@ pimcore.object.classes.data.quantityValue = Class.create(pimcore.object.classes.
         ]);
 
         return this.layout;
+    },
+
+    applySpecialData: function(source) {
+        if (source.datax) {
+            if (!this.datax) {
+                this.datax =  {};
+            }
+            Ext.apply(this.datax,
+                {
+                    width: source.datax.width,
+                    height: source.datax.height,
+                    validUnits: source.datax.validUnits,
+                    defaultUnit: source.datax.defaultUnit,
+                    defaultValue: source.datax.defaultValue,
+                    decimalPrecision: source.datax.decimalPrecision
+                });
+        }
     }
 });

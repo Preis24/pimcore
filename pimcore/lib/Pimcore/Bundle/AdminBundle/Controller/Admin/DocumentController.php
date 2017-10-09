@@ -299,7 +299,7 @@ class DocumentController extends ElementControllerBase implements EventedControl
             $parentDocument = Document::getById($request->get('id'));
 
             $list = new Document\Listing();
-            $list->setCondition("path LIKE '" . $parentDocument->getRealFullPath() . "/%'");
+            $list->setCondition('path LIKE ?', [$parentDocument->getRealFullPath() . '/%']);
             $list->setLimit(intval($request->get('amount')));
             $list->setOrderKey('LENGTH(path)', false);
             $list->setOrder('DESC');
@@ -372,7 +372,7 @@ class DocumentController extends ElementControllerBase implements EventedControl
             if ($hasChilds) {
                 // get amount of childs
                 $list = new Document\Listing();
-                $list->setCondition("path LIKE '" . $document->getRealFullPath() . "/%'");
+                $list->setCondition('path LIKE ?', [$document->getRealFullPath() . '/%']);
                 $childs = $list->getTotalCount();
 
                 if ($childs > 0) {
@@ -755,7 +755,7 @@ class DocumentController extends ElementControllerBase implements EventedControl
             if ($document->hasChildren()) {
                 // get amount of childs
                 $list = new Document\Listing();
-                $list->setCondition("path LIKE '" . $document->getRealFullPath() . "/%'");
+                $list->setCondition('path LIKE ?', [$document->getRealFullPath() . '/%']);
                 $list->setOrderKey('LENGTH(path)', false);
                 $list->setOrder('ASC');
                 $childIds = $list->loadIdList();
@@ -1014,6 +1014,7 @@ class DocumentController extends ElementControllerBase implements EventedControl
      */
     protected function getTreeNodeConfig($element)
     {
+        $site = null;
         $childDocument = $element;
 
         $tmpDocument = [
@@ -1076,7 +1077,7 @@ class DocumentController extends ElementControllerBase implements EventedControl
             'text' => 'Type: ' . $childDocument->getType()
         ];
 
-        if ($site) {
+        if ($site instanceof Site) {
             $tmpDocument['qtipCfg']['text'] .= '<br>' . $this->trans('site_id') . ': ' . $site->getId();
         }
 
@@ -1094,7 +1095,7 @@ class DocumentController extends ElementControllerBase implements EventedControl
         if ($childDocument instanceof Document\Page) {
             $tmpDocument['url'] = $childDocument->getFullPath();
             $site = Tool\Frontend::getSiteForDocument($childDocument);
-            if ($site) {
+            if ($site instanceof Site) {
                 $tmpDocument['url'] = 'http://' . $site->getMainDomain() . preg_replace('@^' . $site->getRootPath() . '/?@', '/', $childDocument->getRealFullPath());
             }
         }

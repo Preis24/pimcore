@@ -19,6 +19,7 @@ use Pimcore\Config;
 use Pimcore\Controller\Configuration\TemplatePhp;
 use Pimcore\Google;
 use Pimcore\Model\Element\Service;
+use Pimcore\Model\Schedule\Manager\Procedural;
 use Pimcore\Model\User;
 use Pimcore\Templating\Model\ViewModel;
 use Pimcore\Tool;
@@ -115,9 +116,10 @@ class IndexController extends AdminController
         $settings = new ViewModel([
             'version'   => Version::getVersion(),
             'build'     => Version::getRevision(),
+            'buildDate'     => Version::getBuildDate(),
             'debug'     => \Pimcore::inDebugMode(),
             'devmode'   => PIMCORE_DEVMODE || $view->extjsDev,
-            'sessionId' => htmlentities($request->getSession()->getId(), ENT_QUOTES, 'UTF-8'),
+            'sessionId' => htmlentities(Session::getSessionId(), ENT_QUOTES, 'UTF-8'),
             'isLegacyModeAvailable' => \Pimcore::isLegacyModeAvailable()
         ]);
 
@@ -227,7 +229,7 @@ class IndexController extends AdminController
         // check maintenance
         $maintenance_active = false;
 
-        $manager = $this->get('pimcore.maintenance.schedule_manager');
+        $manager = $this->get(Procedural::class);
 
         $lastExecution = $manager->getLastExecution();
         if ($lastExecution) {

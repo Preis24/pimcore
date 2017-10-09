@@ -9,12 +9,15 @@ It builds a navigation container based on the existing document structure. The p
 2. Render the navigation: `$this->navigation()->render($nav)` or `$this->navigation()->getRenderer('menu')->render($nav)`
 
 > The building step does not necessarily need to happen in the view script. In fact the view helper just forwards the
- `buildNavigation()` call to the `pimcore.navigation.builder` service. You can also build the navigation in your controller
+ `buildNavigation()` call to the `Pimcore\Navigation\Builder` service. You can also build the navigation in your controller
  or a service and pass the navigation object to the view.
 
 **Only documents are included** in this structure, directories are ignored, regardless of their navigation properties.
 
+<div class="code-section">
+
 ```php
+<?php
 // get root node if there is no document defined (for pages which are routed directly through static route)
 if(!$this->document instanceof \Pimcore\Model\Document\Page) {
     $this->document = \Pimcore\Model\Document\Page::getById(1);
@@ -28,11 +31,36 @@ if(!$navStartNode instanceof \Pimcore\Model\Document\Page) {
 
 // this returns us the navigation container we can use to render the navigation
 $mainNavigation = $this->navigation()->buildNavigation($document, $mainNavStartNode);
+
+// later you can render the navigation
+echo $this->navigation()->render($mainNavigation);
 ```
+
+```twig
+{# get root node if there is no document defined (for pages which are routed directly through static route) #}
+{% if not document is defined or not document %}
+    {% set document = pimcore_document(1) %}
+{% endif %}
+
+{# get the document which should be used to start in navigation | default home #}
+{% set navStartNode = document.getProperty('navigationRoot') %}
+{% if not navStartNode is instanceof('\\Pimcore\\Model\\Document\\Page') %}
+    {% set navStartNode = pimcore_document(1) %}
+{% endif %}
+
+{% set mainNavigation = pimcore_build_nav(document, navStartNode) %}
+
+{# later you can render the navigation #}
+{{ pimcore_render_nav(mainNavigation }}
+```
+
+</div>
 
 Having set up the navigation container as shown above, you can easily use it to render a navigation tree, menus, or breadcrumbs.
 
 ### Meta Navigation - Only the 1st Level
+
+<div class="code-section">
 
 ```php
 <div class="my-menu">
@@ -52,6 +80,18 @@ Having set up the navigation container as shown above, you can easily use it to 
     ]); ?>
 </div>
 ```
+
+```twig
+<div class="my-menu">
+    {# the menu() shortcut is not available in twig #}
+    {{ pimcore_render_nav(mainNavigation, 'menu', 'renderMenu', {
+        maxDepth: 1,
+        ulClass: 'nav navbar-nav'
+    }) }}
+</div>
+```
+
+</div>
 
 ### Breadcrumbs
 
@@ -272,7 +312,7 @@ $navigation = $this->navigation()->buildNavigation($this->document, $navStartNod
     /** @var $document \Pimcore\Model\Document */
     /** @var \Pimcore\Navigation\Page\Document $page */
     if($document->getProperty("templateType") == "news") {
-        $list = new \Pimcore\Model\Object\News\Listing;
+        $list = new \Pimcore\Model\DataObject\News\Listing;
         $list->load();
         foreach($list as $news) {
             $detailLink = $this->url([
@@ -321,12 +361,12 @@ $mainNavigation = $this->navigation()->buildNavigation($this->document, $mainNav
     $page->setCustomSetting("headline", $document->getElement("headline")->getData());
 });
 
-$this->navigation()->menu()->setPartial("/Navigation/partials/navigation.html.php");
+$this->navigation()->menu()->setPartial("Navigation/partials/navigation.html.php");
 echo $this->navigation()->menu()->render($mainNavigation);
 ?>
 ```
 
-Later in the template of the navigation (`/Navigation/partials/navigation.html.php`) you can use the mapped data directly on the page item object.
+Later in the template of the navigation (`Navigation/partials/navigation.html.php`) you can use the mapped data directly on the page item object.
 
 ```php
 <?php foreach( $this->pages as $page ){ ?>
@@ -334,7 +374,7 @@ Later in the template of the navigation (`/Navigation/partials/navigation.html.p
          <li class="<?php if( $page->getActive(true) ){ ?>active<?php } ?>">
           <a href="<?= $page->getUri() ?>" target="<?= $page->getTarget() ?>"><?= $page->getLabel() ?></a>
           <ul class="<?= $page->getCustomSetting("subListClass") ?>" role="menu">
-                <?php $this->template( "/navigation/partials/main.php", [ "container" => $page->getPages() ] ); ?>
+                <?= $this->template("Navigation/partials/partials/main.html.php", [ "pages" => $page->getPages() ] ); ?>
           </ul>
      </li>
     <?php } ?>

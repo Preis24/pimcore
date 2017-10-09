@@ -18,6 +18,9 @@ pimcore.asset.asset = Class.create(pimcore.element.abstract, {
         Ext.Ajax.request({
             url: "/admin/asset/get-data-by-id",
             success: this.getDataComplete.bind(this),
+            failure: function() {
+                this.forgetOpenTab();
+            }.bind(this),
             params: {
                 id: this.id,
                 type: this.type
@@ -95,8 +98,8 @@ pimcore.asset.asset = Class.create(pimcore.element.abstract, {
 
         // remove this instance when the panel is closed
         this.tab.on("destroy", function () {
-            pimcore.globalmanager.remove("asset_" + this.id);
-            pimcore.helpers.forgetOpenTab("asset_" + this.id + "_" + this.getType());
+            this.forgetOpenTab();
+
         }.bind(this));
 
         this.tab.on("afterrender", function (tabId) {
@@ -116,6 +119,11 @@ pimcore.asset.asset = Class.create(pimcore.element.abstract, {
         pimcore.layout.refresh();
     },
 
+    forgetOpenTab: function() {
+        pimcore.globalmanager.remove("asset_" + this.id);
+        pimcore.helpers.forgetOpenTab("asset_" + this.id + "_" + this.getType());
+    },
+
     getLayoutToolbar : function () {
 
         if (!this.toolbar) {
@@ -129,7 +137,8 @@ pimcore.asset.asset = Class.create(pimcore.element.abstract, {
 
                 this.toolbarButtons.publish = Ext.create("Ext.button.Split", {
                     text: t("save_and_publish"),
-                    iconCls: "pimcore_icon_publish",
+                    iconCls: "pimcore_icon_save_white",
+                    cls: "pimcore_save_button",
                     scale: "medium",
                     handler: this.save.bind(this),
                     menu: [{
@@ -381,8 +390,17 @@ pimcore.asset.asset = Class.create(pimcore.element.abstract, {
     upload: function () {
         pimcore.helpers.uploadDialog('/admin/asset/replace-asset?id=' + this.data.id, "Filedata", function() {
             this.reload();
-        }.bind(this), function () {
-            Ext.MessageBox.alert(t("error"), t("error"));
+        }.bind(this), function (res) {
+            var message = false;
+            try {
+                var response = Ext.util.JSON.decode(res.response.responseText);
+                if(response.message) {
+                    message = response.message;
+                }
+
+            } catch(e) {}
+
+            Ext.MessageBox.alert(t("error"), message || t("error"));
         });
     },
 
