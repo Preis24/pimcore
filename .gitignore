@@ -9,6 +9,8 @@
 # local config
 /.env
 
+/var/cache/*
+
 # pimcore legacy (remove this for your own development)
 !/legacy
 /legacy/*
