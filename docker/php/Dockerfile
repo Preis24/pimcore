@@ -38,4 +38,6 @@ RUN composer dump-autoload --optimize && \
 RUN chown -R www-data:www-data web/var var pimcore app/config
 RUN chmod -R 777 web/var var pimcore app/config
 
+RUN sudo -u www-data php /var/www/bin/console pimcore:user:reset-password admin -p demo
+
 CMD ["php-fpm", "-R"]
