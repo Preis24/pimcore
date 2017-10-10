@@ -18,9 +18,9 @@ services:
       - mysql
     depends_on:
       - mysql
-    volumes:
-      - ./:/var/www
   nginx:
+    depends_on:
+      - php
     container_name: pimcore_nginx
     build: ./docker/nginx
     ports:
