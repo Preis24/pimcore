@@ -67,7 +67,7 @@ return [
         ]
     ],
     "cache" => [
-        "enabled" => FALSE,
+        "enabled" => TRUE,
         "lifetime" => NULL,
         "excludePatterns" => "",
         "excludeCookie" => ""

@@ -18,7 +18,7 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 
 WORKDIR /tmp
 
-RUN curl -O https://raw.githubusercontent.com/pimcore/pimcore/master/composer.json
+RUN curl -O https://raw.githubusercontent.com/Preis24/pimcore/master/composer.json
 
 RUN composer install --no-scripts --no-autoloader
 
@@ -26,11 +26,9 @@ WORKDIR /var/www
 
 RUN rm -rf /var/www/html
 
-RUN git clone https://github.com/pimcore/pimcore.git /var/www
+RUN git clone https://github.com/Preis24/pimcore.git /var/www
 RUN cp -R /tmp/vendor /var/www/vendor
 RUN cp -R /tmp/composer.lock /var/www/composer.lock
-
-COPY ./system.php /var/www/var/config/system.php
 
 RUN composer dump-autoload --optimize && \
 	composer run-script post-install-cmd
