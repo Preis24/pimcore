@@ -16,6 +16,8 @@ RUN apk add freetype \
 
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
+ENV PHP_EXTRA_CONFIGURE_ARGS --enable-fpm --with-fpm-user=root --with-fpm-group=root
+
 WORKDIR /tmp
 
 RUN curl -O https://raw.githubusercontent.com/Preis24/pimcore/master/composer.json
@@ -34,4 +36,6 @@ RUN composer dump-autoload --optimize && \
 	composer run-script post-install-cmd
 
 RUN chown -R www-data:www-data web/var var pimcore app/config
-RUN chmod -R 775 var
+RUN chmod -R 777 web/var var pimcore app/config
+
+CMD ["php-fpm", "-R"]

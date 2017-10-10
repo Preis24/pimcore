@@ -1,0 +1,63 @@
+[10-Oct-2017 12:23:37 Europe/Berlin] PHP Fatal error:  Uncaught UnexpectedValueException: There is no existing directory at "/var/www/var\logs" and its not buildable: Invalid argument in /var/www/vendor/monolog/monolog/src/Monolog/Handler/StreamHandler.php:171
+Stack trace:
+#0 /var/www/vendor/monolog/monolog/src/Monolog/Handler/StreamHandler.php(97): Monolog\Handler\StreamHandler->createDir()
+#1 /var/www/vendor/monolog/monolog/src/Monolog/Handler/AbstractProcessingHandler.php(37): Monolog\Handler\StreamHandler->write(Array)
+#2 /var/www/vendor/monolog/monolog/src/Monolog/Handler/FingersCrossedHandler.php(122): Monolog\Handler\AbstractProcessingHandler->handle(Array)
+#3 /var/www/vendor/monolog/monolog/src/Monolog/Logger.php(337): Monolog\Handler\FingersCrossedHandler->handle(Array)
+#4 /var/www/vendor/monolog/monolog/src/Monolog/Logger.php(532): Monolog\Logger->addRecord(100, 'An exception oc...', Array)
+#5 /var/www/pimcore/lib/Pimcore/Logger.php(30): Monolog\Logger->debug('An exception oc...', Array)
+#6 /var/www/pimcore/lib/Pimcore/Logger.php(143): Pimcore\Logger::l in /var/www/vendor/monolog/monolog/src/Monolog/Handler/StreamHandler.php on line 171
+[10-Oct-2017 12:23:37 Europe/Berlin] PHP Fatal error:  Uncaught PDOException: SQLSTATE[HY000] [2002] No such file or directory in /var/www/vendor/doctrine/dbal/lib/Doctrine/DBAL/Driver/PDOConnection.php:43
+Stack trace:
+#0 /var/www/vendor/doctrine/dbal/lib/Doctrine/DBAL/Driver/PDOConnection.php(43): PDO->__construct('mysql:host=loca...', 'root', '', Array)
+#1 /var/www/vendor/doctrine/dbal/lib/Doctrine/DBAL/Driver/PDOMySql/Driver.php(44): Doctrine\DBAL\Driver\PDOConnection->__construct('mysql:host=loca...', 'root', '', Array)
+#2 /var/www/vendor/doctrine/dbal/lib/Doctrine/DBAL/Connection.php(360): Doctrine\DBAL\Driver\PDOMySql\Driver->connect(Array, 'root', '', Array)
+#3 /var/www/pimcore/lib/Pimcore/Db/Connection.php(40): Doctrine\DBAL\Connection->connect()
+#4 /var/www/vendor/doctrine/dbal/lib/Doctrine/DBAL/Connection.php(429): Pimcore\Db\Connection->connect()
+#5 /var/www/vendor/doctrine/dbal/lib/Doctrine/DBAL/Connection.php(389): Doctrine\DBAL\Connection->getDatabasePlatformVersion()
+#6 /var/www/vendor/doctrine/dbal/lib/Doctrine/DBAL/Connection.php(328): Doctrine\D in /var/www/vendor/doctrine/dbal/lib/Doctrine/DBAL/Driver/AbstractMySQLDriver.php on line 103
+[10-Oct-2017 12:26:53 Europe/Berlin] PHP Fatal error:  Uncaught UnexpectedValueException: There is no existing directory at "/var/www/var\logs" and its not buildable: Invalid argument in /var/www/vendor/monolog/monolog/src/Monolog/Handler/StreamHandler.php:171
+Stack trace:
+#0 /var/www/vendor/monolog/monolog/src/Monolog/Handler/StreamHandler.php(97): Monolog\Handler\StreamHandler->createDir()
+#1 /var/www/vendor/monolog/monolog/src/Monolog/Handler/AbstractProcessingHandler.php(37): Monolog\Handler\StreamHandler->write(Array)
+#2 /var/www/vendor/monolog/monolog/src/Monolog/Handler/FingersCrossedHandler.php(122): Monolog\Handler\AbstractProcessingHandler->handle(Array)
+#3 /var/www/vendor/monolog/monolog/src/Monolog/Logger.php(337): Monolog\Handler\FingersCrossedHandler->handle(Array)
+#4 /var/www/vendor/monolog/monolog/src/Monolog/Logger.php(532): Monolog\Logger->addRecord(100, 'There is no exi...', Array)
+#5 /var/www/pimcore/lib/Pimcore/Logger.php(30): Monolog\Logger->debug('There is no exi...', Array)
+#6 /var/www/pimcore/lib/Pimcore/Logger.php(143): Pimcore\Logger::l in /var/www/vendor/monolog/monolog/src/Monolog/Handler/StreamHandler.php on line 171
+[10-Oct-2017 12:27:36 Europe/Berlin] PHP Fatal error:  Uncaught UnexpectedValueException: There is no existing directory at "/var/www/var\logs" and its not buildable: Invalid argument in /var/www/vendor/monolog/monolog/src/Monolog/Handler/StreamHandler.php:171
+Stack trace:
+#0 /var/www/vendor/monolog/monolog/src/Monolog/Handler/StreamHandler.php(97): Monolog\Handler\StreamHandler->createDir()
+#1 /var/www/vendor/monolog/monolog/src/Monolog/Handler/AbstractProcessingHandler.php(37): Monolog\Handler\StreamHandler->write(Array)
+#2 /var/www/vendor/monolog/monolog/src/Monolog/Handler/FingersCrossedHandler.php(122): Monolog\Handler\AbstractProcessingHandler->handle(Array)
+#3 /var/www/vendor/monolog/monolog/src/Monolog/Logger.php(337): Monolog\Handler\FingersCrossedHandler->handle(Array)
+#4 /var/www/vendor/monolog/monolog/src/Monolog/Logger.php(532): Monolog\Logger->addRecord(100, 'There is no exi...', Array)
+#5 /var/www/pimcore/lib/Pimcore/Logger.php(30): Monolog\Logger->debug('There is no exi...', Array)
+#6 /var/www/pimcore/lib/Pimcore/Logger.php(143): Pimcore\Logger::l in /var/www/vendor/monolog/monolog/src/Monolog/Handler/StreamHandler.php on line 171
+[10-Oct-2017 12:35:37 Europe/Berlin] PHP Fatal error:  Uncaught UnexpectedValueException: There is no existing directory at "/var/www/var\logs" and its not buildable: Invalid argument in /var/www/vendor/monolog/monolog/src/Monolog/Handler/StreamHandler.php:171
+Stack trace:
+#0 /var/www/vendor/monolog/monolog/src/Monolog/Handler/StreamHandler.php(97): Monolog\Handler\StreamHandler->createDir()
+#1 /var/www/vendor/monolog/monolog/src/Monolog/Handler/AbstractProcessingHandler.php(37): Monolog\Handler\StreamHandler->write(Array)
+#2 /var/www/vendor/monolog/monolog/src/Monolog/Handler/FingersCrossedHandler.php(122): Monolog\Handler\AbstractProcessingHandler->handle(Array)
+#3 /var/www/vendor/monolog/monolog/src/Monolog/Logger.php(337): Monolog\Handler\FingersCrossedHandler->handle(Array)
+#4 /var/www/vendor/monolog/monolog/src/Monolog/Logger.php(532): Monolog\Logger->addRecord(100, 'There is no exi...', Array)
+#5 /var/www/pimcore/lib/Pimcore/Logger.php(30): Monolog\Logger->debug('There is no exi...', Array)
+#6 /var/www/pimcore/lib/Pimcore/Logger.php(143): Pimcore\Logger::l in /var/www/vendor/monolog/monolog/src/Monolog/Handler/StreamHandler.php on line 171
+[10-Oct-2017 12:47:13 Europe/Berlin] PHP Fatal error:  Uncaught UnexpectedValueException: There is no existing directory at "/var/www/var\logs" and its not buildable: Invalid argument in /var/www/vendor/monolog/monolog/src/Monolog/Handler/StreamHandler.php:171
+Stack trace:
+#0 /var/www/vendor/monolog/monolog/src/Monolog/Handler/StreamHandler.php(97): Monolog\Handler\StreamHandler->createDir()
+#1 /var/www/vendor/monolog/monolog/src/Monolog/Handler/AbstractProcessingHandler.php(37): Monolog\Handler\StreamHandler->write(Array)
+#2 /var/www/vendor/monolog/monolog/src/Monolog/Handler/FingersCrossedHandler.php(122): Monolog\Handler\AbstractProcessingHandler->handle(Array)
+#3 /var/www/vendor/monolog/monolog/src/Monolog/Logger.php(337): Monolog\Handler\FingersCrossedHandler->handle(Array)
+#4 /var/www/vendor/monolog/monolog/src/Monolog/Logger.php(532): Monolog\Logger->addRecord(100, 'There is no exi...', Array)
+#5 /var/www/pimcore/lib/Pimcore/Logger.php(30): Monolog\Logger->debug('There is no exi...', Array)
+#6 /var/www/pimcore/lib/Pimcore/Logger.php(143): Pimcore\Logger::l in /var/www/vendor/monolog/monolog/src/Monolog/Handler/StreamHandler.php on line 171
+[10-Oct-2017 14:14:32 Europe/Berlin] PHP Fatal error:  Uncaught UnexpectedValueException: There is no existing directory at "/var/www/var\logs" and its not buildable: Invalid argument in /var/www/vendor/monolog/monolog/src/Monolog/Handler/StreamHandler.php:171
+Stack trace:
+#0 /var/www/vendor/monolog/monolog/src/Monolog/Handler/StreamHandler.php(97): Monolog\Handler\StreamHandler->createDir()
+#1 /var/www/vendor/monolog/monolog/src/Monolog/Handler/AbstractProcessingHandler.php(37): Monolog\Handler\StreamHandler->write(Array)
+#2 /var/www/vendor/monolog/monolog/src/Monolog/Handler/FingersCrossedHandler.php(122): Monolog\Handler\AbstractProcessingHandler->handle(Array)
+#3 /var/www/vendor/monolog/monolog/src/Monolog/Logger.php(337): Monolog\Handler\FingersCrossedHandler->handle(Array)
+#4 /var/www/vendor/monolog/monolog/src/Monolog/Logger.php(532): Monolog\Logger->addRecord(100, 'There is no exi...', Array)
+#5 /var/www/pimcore/lib/Pimcore/Logger.php(30): Monolog\Logger->debug('There is no exi...', Array)
+#6 /var/www/pimcore/lib/Pimcore/Logger.php(143): Pimcore\Logger::l in /var/www/vendor/monolog/monolog/src/Monolog/Handler/StreamHandler.php on line 171
