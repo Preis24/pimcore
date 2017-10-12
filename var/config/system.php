@@ -22,9 +22,9 @@ return [
     "database" => [
         "params" => [
             "username" => "pimcore",
-            "password" => "passw0rd",
+            "password" => "pimcore",
             "dbname" => "pimcore",
-            "host" => "mysql",
+            "host" => "127.0.0.1",
             "port" => "3306"
         ]
     ],
