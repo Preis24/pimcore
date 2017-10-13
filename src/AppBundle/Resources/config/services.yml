@@ -1,3 +1,10 @@
+parameters:
+    # eAm AShop soap service
+    eam_soap_webservice.wsdl: 'https://api.eamonline.de/v2.0/API.php?wsdl'
+    eam_soap_webservice.user: 'preis24'
+    eam_soap_webservice.pass: '6fdJhb!jkd)=,M'
+    eam_soap_webservice.header_name: 'authentication'
+
 services:
     # default configuration for services in *this* file
     _defaults:
@@ -11,3 +18,66 @@ services:
         resource: '../../Controller'
         public: true
         tags: ['controller.service_arguments']
+
+    # eAm Soap Client
+    webservice.eam.soap_client:
+        class: AppBundle\Webservice\Einsamobile\Soap\Client
+        arguments:
+            - '%eam_soap_webservice.wsdl%'
+            - '%eam_soap_webservice.user%'
+            - '%eam_soap_webservice.pass%'
+            - '%eam_soap_webservice.header_name%'
+
+    # eAm Import Services
+    webservice.eam.import.articles:
+        class: AppBundle\Webservice\Einsamobile\Import\Articles
+        arguments:
+            - '@webservice.eam.soap_client'
+            - 'Pimcore\Model\Object\EamArticle'
+            - 'Pimcore\Model\Object\EamArticle\Listing'
+            - 5 # Parent ID
+
+    # eAm Import Services
+    webservice.eam.import.article_details:
+        class: AppBundle\Webservice\Einsamobile\Import\ArticleDetails
+        arguments:
+            - '@webservice.eam.soap_client'
+            - 'Pimcore\Model\Object\EamArticleDetails'
+            - 'Pimcore\Model\Object\EamArticleDetails\Listing'
+
+    webservice.eam.import.tariffs:
+        class: AppBundle\Webservice\Einsamobile\Import\Tariffs
+        arguments:
+            - '@webservice.eam.soap_client'
+            - 'Pimcore\Model\Object\EamTariff'
+            - 'Pimcore\Model\Object\EamTariff\Listing'
+            - 4 # Parent ID
+
+    webservice.eam.import.combinations:
+        class: AppBundle\Webservice\Einsamobile\Import\Combinations
+        arguments:
+            - '@webservice.eam.soap_client'
+            - 'Pimcore\Model\Object\EamCombination'
+            - 'Pimcore\Model\Object\EamCombination\Listing'
+            - 6 # Parent ID
+
+    # eAm Command Import
+    webservice.eam.command.import.articles:
+        class: AppBundle\Webservice\Einsamobile\Command\ImportArticlesCommand
+        arguments:
+            - '@webservice.eam.import.articles'
+
+    webservice.eam.command.import.tariffs:
+        class: AppBundle\Webservice\Einsamobile\Command\ImportTariffsCommand
+        arguments:
+            - '@webservice.eam.import.tariffs'
+
+    webservice.eam.command.import.combinations:
+        class: AppBundle\Webservice\Einsamobile\Command\ImportCombinationsCommand
+        arguments:
+            - '@webservice.eam.import.combinations'
+
+    webservice.eam.command.import.article_details:
+        class: AppBundle\Webservice\Einsamobile\Command\ImportArticleDetailsCommand
+        arguments:
+            - '@webservice.eam.import.article_details'
