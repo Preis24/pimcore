@@ -77,7 +77,7 @@ class Articles extends ImportAbstract implements ImportInterface
     private function buildItemKey($data)
     {
         return File::getValidFilename(
-            $data['bezeichnung'] . " " . $data['farbe_bezeichnung'] . " " . $data['speicher'] . "gb"
+            $data['hersteller'] . " " .$data['kurzform'] . " " . $data['farbe_bezeichnung'] . " " . $data['speicher'] . "gb"
         );
     }
 }

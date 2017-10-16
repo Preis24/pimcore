@@ -73,7 +73,7 @@ class Tariffs extends ImportAbstract implements ImportInterface
     private function buildItemKey($data)
     {
         return File::getValidFilename(
-            $data['tarifname']
+            $data['provider'] ."-". $data['tarifname']
         );
     }
 

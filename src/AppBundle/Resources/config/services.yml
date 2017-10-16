@@ -35,7 +35,7 @@ services:
             - '@webservice.eam.soap_client'
             - 'Pimcore\Model\Object\EamArticle'
             - 'Pimcore\Model\Object\EamArticle\Listing'
-            - 5 # Parent ID
+            - 4 # Parent ID
 
     # eAm Import Services
     webservice.eam.import.article_details:
@@ -51,7 +51,7 @@ services:
             - '@webservice.eam.soap_client'
             - 'Pimcore\Model\Object\EamTariff'
             - 'Pimcore\Model\Object\EamTariff\Listing'
-            - 4 # Parent ID
+            - 5 # Parent ID
 
     webservice.eam.import.combinations:
         class: AppBundle\Webservice\Einsamobile\Import\Combinations
