@@ -44,6 +44,7 @@ doctrine:
             default:
                 wrapper_class: '\Pimcore\Db\Connection'
                 driver: pdo_mysql
+                server_version: 5.7
                 host: '%pimcore_system_config.database.params.host%'
                 port: '%pimcore_system_config.database.params.port%'
                 dbname: '%pimcore_system_config.database.params.dbname%'
